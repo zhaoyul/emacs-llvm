@@ -1,0 +1,92 @@
+name: Linux Package Runtime Experimental
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package-runtime:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install project dependencies
+        run: npm ci
+      - name: Install GNU Emacs and Lisp runtimes
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y emacs-gtk xvfb xauth dbus-x11 clojure libnrepl-clojure sbcl
+          for package in elpa-paredit elpa-clojure-mode elpa-cider elpa-sly; do
+            if apt-cache show "$package" >/dev/null 2>&1; then
+              sudo apt-get install -y "$package"
+            else
+              echo "$package unavailable in the runner package set" | tee -a package-unavailable.txt
+            fi
+          done
+      - name: Resolve ELPA load paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          paths="$(find /usr/share/emacs/site-lisp /usr/share/emacs/*/site-lisp -mindepth 1 -maxdepth 2 -type d 2>/dev/null | sort -u | paste -sd: -)"
+          echo "EMACS_OPERATOR_LINUX_EMACS_EXTRA_LOAD_PATHS=$paths" >> "$GITHUB_ENV"
+      - name: Start real nREPL
+        shell: bash
+        run: |
+          set -euo pipefail
+          nrepl_jar="$(find /usr/share/java -maxdepth 1 -type f -iname '*nrepl*.jar' | head -1)"
+          test -n "$nrepl_jar"
+          nohup clojure -cp "$nrepl_jar" -m nrepl.cmdline --bind 127.0.0.1 --port 7888 > nrepl.log 2>&1 &
+          echo $! > nrepl.pid
+          for i in $(seq 1 120); do (echo >/dev/tcp/127.0.0.1/7888) >/dev/null 2>&1 && exit 0; sleep .25; done
+          cat nrepl.log
+          exit 1
+      - name: Start real Slynk
+        shell: bash
+        run: |
+          set -euo pipefail
+          loader="$(find /usr/share/emacs /usr/share/common-lisp -type f -path '*/slynk/slynk-loader.lisp' 2>/dev/null | head -1)"
+          test -n "$loader"
+          cat > start-slynk.lisp <<EOF
+          (load "$loader")
+          (slynk-loader:init)
+          (slynk:create-server :port 4005 :interface "127.0.0.1" :dont-close t)
+          (loop (sleep 60))
+          EOF
+          nohup sbcl --noinform --disable-debugger --load start-slynk.lisp > slynk.log 2>&1 &
+          echo $! > slynk.pid
+          for i in $(seq 1 120); do (echo >/dev/tcp/127.0.0.1/4005) >/dev/null 2>&1 && exit 0; sleep .25; done
+          cat slynk.log
+          exit 1
+      - name: Run hard Linux package acceptance
+        env:
+          EMACS_OPERATOR_LINUX_EMACS_SETUP_FILE: ${{ github.workspace }}/.github/ci/linux-package-acceptance.el
+          EMACS_OPERATOR_LINUX_PACKAGE_WAIT_MS: "30000"
+          EMACS_OPERATOR_LINUX_REQUIRE_EMACS: "1"
+          EMACS_OPERATOR_LINUX_REQUIRE_GUI_EMACS: "1"
+          EMACS_OPERATOR_LINUX_REQUIRE_PAREDIT: "1"
+          EMACS_OPERATOR_LINUX_REQUIRE_CIDER: "1"
+          EMACS_OPERATOR_LINUX_REQUIRE_SLY: "1"
+          EMACS_OPERATOR_CI_NREPL_PORT: "7888"
+          EMACS_OPERATOR_CI_SLYNK_PORT: "4005"
+          EMACS_OPERATOR_LINUX_RUN_BENCHMARKS: "0"
+        run: npm run accept:linux
+      - name: Upload acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-package-runtime-${{ github.run_id }}
+          path: |
+            dist/acceptance/
+            nrepl.log
+            slynk.log
+            package-unavailable.txt
+          if-no-files-found: warn
+          retention-days: 14
