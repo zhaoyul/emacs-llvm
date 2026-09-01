@@ -1,3 +1,3 @@
 version=0.1.0-alpha.16
 archive_sha256=1967f1b7376fb6fa8a783aac9de67245258ef29356a399d826cac9c93d8e4a9c
-trigger=source-import-final
+trigger=source-import-final-retry-2
