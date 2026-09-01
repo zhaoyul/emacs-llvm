@@ -1,0 +1,61 @@
+name: Build Release Artifacts
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Portable release gate
+        run: |
+          set -euo pipefail
+          npm run check:repository-import
+          npm run check:version
+          npm run typecheck
+          npm run check:elisp-structure
+          npm run test:ts
+          npm run test:alpha10-intelligence
+          npm run test:agent-experiment
+          npm run linux-host:test
+      - name: Build packaged artifacts
+        run: |
+          set -euo pipefail
+          version="$(node -p 'require("./package.json").version')"
+          mkdir -p release
+          bash scripts/package-mcpb.sh "release/emacs-operator-${version}.mcpb"
+          npm run package:linux-host
+          cp "dist/emacs-operator-linux-host-${version}-linux-x86_64.tar.gz" release/
+          git archive --format=zip --prefix=emacs-operator/ -o "release/emacs-operator-${version}-source.zip" HEAD
+          (cd release && sha256sum * > SHA256SUMS.txt)
+          printf '{\n  "schema_version": "1.0",\n  "version": "%s",\n  "commit": "%s",\n  "workflow_run": "%s"\n}\n' \
+            "$version" "${GITHUB_SHA}" "${GITHUB_RUN_ID}" > release/BUILD_INFO.json
+      - name: Verify archives
+        run: |
+          set -euo pipefail
+          python3 -m zipfile -t release/*-source.zip
+          python3 -m zipfile -t release/*.mcpb
+          tar -tzf release/*-linux-x86_64.tar.gz >/dev/null
+          (cd release && sha256sum -c SHA256SUMS.txt)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: emacs-operator-${{ github.sha }}
+          path: release/
+          if-no-files-found: error
+          retention-days: 30
