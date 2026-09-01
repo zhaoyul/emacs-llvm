@@ -1,0 +1,10 @@
+node_modules/
+dist/
+apps/macos-host/.build/
+.DS_Store
+*.log
+runtime/
+
+apps/linux-host/build/
+.runtime/
+artifacts/
