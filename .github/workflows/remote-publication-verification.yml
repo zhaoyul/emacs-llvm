@@ -1,0 +1,44 @@
+name: Remote Publication Verification
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Verify canonical source import
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f package.json
+          test "$(node -p 'require("./package.json").version')" = "0.1.0-alpha.16"
+          test -f lisp/emacs-operator.el
+          test -f packages/mcp-server/src/server.ts
+          test -f apps/linux-host/package.json
+          test -f apps/macos-host/Package.swift
+          test ! -e .bootstrap
+          tracked="$(git ls-files | wc -l)"
+          test "$tracked" -ge 300
+      - run: npm ci
+      - run: npm run check:repository-import
+      - run: npm run check:version
+      - run: npm run typecheck
+      - run: npm run check:elisp-structure
+      - run: npm run test:ts
+      - run: npm run test:alpha10-intelligence
+      - run: npm run test:agent-experiment
+      - run: npm run linux-host:test
