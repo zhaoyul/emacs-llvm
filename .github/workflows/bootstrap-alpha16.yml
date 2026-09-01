@@ -50,11 +50,14 @@ jobs:
             exit 1
           fi
           printf 'bootstrap_parts=%s\n' "${#parts[@]}"
-          cat "${parts[@]}" > "$RUNNER_TEMP/emacs-operator-alpha16.tar.xz.b64"
-          base64 --decode "$RUNNER_TEMP/emacs-operator-alpha16.tar.xz.b64" > "$RUNNER_TEMP/emacs-operator-alpha16.tar.xz"
-          echo "1967f1b7376fb6fa8a783aac9de67245258ef29356a399d826cac9c93d8e4a9c  $RUNNER_TEMP/emacs-operator-alpha16.tar.xz" | sha256sum --check --strict
+          archive="$RUNNER_TEMP/emacs-operator-alpha16.tar.xz"
+          : > "$archive"
+          for part in "${parts[@]}"; do
+            base64 --decode "$part" >> "$archive"
+          done
+          echo "1967f1b7376fb6fa8a783aac9de67245258ef29356a399d826cac9c93d8e4a9c  $archive" | sha256sum --check --strict
           mkdir -p "$RUNNER_TEMP/source"
-          tar -xJf "$RUNNER_TEMP/emacs-operator-alpha16.tar.xz" -C "$RUNNER_TEMP/source"
+          tar -xJf "$archive" -C "$RUNNER_TEMP/source"
           test -f "$RUNNER_TEMP/source/package.json"
           version="$(node -p "require('$RUNNER_TEMP/source/package.json').version")"
           test "$version" = "0.1.0-alpha.16"
