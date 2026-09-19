@@ -50,11 +50,15 @@ jobs:
             exit 1
           fi
           printf 'bootstrap_parts=%s\n' "${#parts[@]}"
+
+          encoded="$RUNNER_TEMP/emacs-operator-alpha16.tar.xz.b64"
           archive="$RUNNER_TEMP/emacs-operator-alpha16.tar.xz"
-          : > "$archive"
+          : > "$encoded"
           for part in "${parts[@]}"; do
-            base64 --decode "$part" >> "$archive"
+            cat "$part" >> "$encoded"
           done
+          base64 --decode "$encoded" > "$archive"
+
           echo "1967f1b7376fb6fa8a783aac9de67245258ef29356a399d826cac9c93d8e4a9c  $archive" | sha256sum --check --strict
           mkdir -p "$RUNNER_TEMP/source"
           tar -xJf "$archive" -C "$RUNNER_TEMP/source"
