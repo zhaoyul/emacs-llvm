@@ -59,14 +59,29 @@ jobs:
           done
           base64 --decode "$encoded" > "$archive"
 
-          echo "1967f1b7376fb6fa8a783aac9de67245258ef29356a399d826cac9c93d8e4a9c  $archive" | sha256sum --check --strict
+          expected_sha="$(awk -F= '$1 == "archive_sha256" { print $2 }' .bootstrap/READY)"
+          actual_sha="$(sha256sum "$archive" | awk '{ print $1 }')"
+          printf 'archive_bytes=%s\n' "$(stat -c '%s' "$archive")"
+          printf 'archive_sha256_expected=%s\n' "$expected_sha"
+          printf 'archive_sha256_actual=%s\n' "$actual_sha"
+
+          xz --test "$archive"
+          printf 'xz_integrity=pass\n'
+          tar -tJf "$archive" >/dev/null
+          printf 'tar_listing=pass\n'
+
           mkdir -p "$RUNNER_TEMP/source"
           tar -xJf "$archive" -C "$RUNNER_TEMP/source"
           test -f "$RUNNER_TEMP/source/package.json"
           version="$(node -p "require('$RUNNER_TEMP/source/package.json').version")"
-          test "$version" = "0.1.0-alpha.16"
           printf 'source_version=%s\n' "$version"
           printf 'source_files=%s\n' "$(find "$RUNNER_TEMP/source" -type f | wc -l)"
+          test "$version" = "0.1.0-alpha.16"
+
+          if [[ "$actual_sha" != "$expected_sha" ]]; then
+            echo "Archive SHA-256 differs from READY lock after structural validation." >&2
+            exit 42
+          fi
 
       - name: Merge repository-native CI additions into recovered source
         shell: bash
