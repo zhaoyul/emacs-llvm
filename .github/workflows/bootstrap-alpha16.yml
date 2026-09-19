@@ -44,9 +44,9 @@ jobs:
         run: |
           set -euo pipefail
           shopt -s nullglob
-          parts=(.bootstrap/part-??? )
+          parts=(.bootstrap/alpha16-source/part-*.txt)
           if [[ ${#parts[@]} -eq 0 ]]; then
-            echo "No bootstrap parts found" >&2
+            echo "No bootstrap parts found under .bootstrap/alpha16-source" >&2
             exit 1
           fi
           printf 'bootstrap_parts=%s\n' "${#parts[@]}"
