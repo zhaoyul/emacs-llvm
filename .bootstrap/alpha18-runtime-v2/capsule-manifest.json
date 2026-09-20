@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0",
+  "name": "alpha18-locked-package-runtime",
+  "base_version": "0.1.0-alpha.16",
+  "base_release_zip_sha256": "5cba2930d861891dc880a24f56ba0be34bdb0c6928cd9227302f223ba6683bab",
+  "patch_sha256": "1b42eb34821ebc2f71b5c8fb29c9a5d145a1249c1f8ad8cd65c6a12cde97329f",
+  "compressed_sha256": "9d1b6dc55e004d15bf93deedd60281546955e9a1ccd68d6a7ca97881cff057ce",
+  "patch_bytes": 69770,
+  "compressed_bytes": 15840,
+  "base64_bytes": 21120,
+  "validation": {
+    "package_runtime_tests": "31/31 PASS",
+    "typescript_tests": "93/93 PASS",
+    "typecheck": "PASS",
+    "version": "PASS",
+    "elisp_structure": "PASS",
+    "workflow_yaml": "PASS",
+    "agent_experiment_tests": "18/18 PASS",
+    "clean_replay_patch_apply": "PASS",
+    "clean_replay_package_runtime_tests": "31/31 PASS"
+  },
+  "encoding": "base64-concatenated-text-parts",
+  "parts": [
+    {
+      "name": "part-000.txt",
+      "bytes": 8000,
+      "sha256": "e22ba4357dc0b81dfa72bb228568a3e9a736907ae752660854c3010543bc5bc2"
+    },
+    {
+      "name": "part-001.txt",
+      "bytes": 8000,
+      "sha256": "3cce5ff8cb1ddab0da2a139c9127bf100abcd399024e6f396161f25b65d36da0"
+    },
+    {
+      "name": "part-002.txt",
+      "bytes": 5120,
+      "sha256": "c0a8beff518e50cf43ef30ef4f58991ae84b7b81964c012f496a0207c2132c36"
+    }
+  ]
+}
