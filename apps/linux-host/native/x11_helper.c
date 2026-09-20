@@ -26,6 +26,7 @@
 #define MAX_LINE 262144
 #define MAX_MODIFIERS 16
 #define MAX_HELD_KEYS 128
+#define MAX_DYNAMIC_MAPPINGS 64
 #define MAX_CAPTURE_SOURCE_DIMENSION 32768
 #define MAX_CAPTURE_SOURCE_PIXELS 67108864ULL
 
@@ -54,6 +55,19 @@ typedef struct {
     HeldKey items[MAX_HELD_KEYS];
     size_t count;
 } HeldKeys;
+
+typedef struct {
+    KeyCode code;
+    uint32_t codepoint;
+    int keysyms_per_keycode;
+    KeySym *original;
+    bool active;
+} DynamicMapping;
+
+typedef struct {
+    DynamicMapping items[MAX_DYNAMIC_MAPPINGS];
+    size_t count;
+} DynamicMappings;
 
 static volatile sig_atomic_t sequence_cancel_requested = 0;
 static volatile sig_atomic_t sequence_target_lost = 0;
@@ -503,23 +517,27 @@ static bool find_keycode_for_keysym(Display *display, KeySym sym, KeyCode *code,
     return found;
 }
 
-static KeyCode scratch_keycode(Display *display) {
+static bool find_empty_scratch_keycode(Display *display, KeyCode *code_out) {
     int min_code = 0, max_code = 0, per = 0;
     XDisplayKeycodes(display, &min_code, &max_code);
     KeySym *mapping = XGetKeyboardMapping(display, (KeyCode)min_code, max_code - min_code + 1, &per);
-    if (!mapping) return (KeyCode)max_code;
+    if (!mapping || per <= 0) {
+        if (mapping) XFree(mapping);
+        return false;
+    }
     for (int key = max_code; key >= min_code; --key) {
         bool empty = true;
         for (int level = 0; level < per; ++level) {
             if (mapping[(key - min_code) * per + level] != NoSymbol) { empty = false; break; }
         }
         if (empty) {
+            *code_out = (KeyCode)key;
             XFree(mapping);
-            return (KeyCode)key;
+            return true;
         }
     }
     XFree(mapping);
-    return (KeyCode)max_code;
+    return false;
 }
 
 static bool fake_key(XTestAPI *api, Display *display, KeyCode code, bool press) {
@@ -647,47 +665,106 @@ static bool send_existing_keysym(XTestAPI *api, Display *display, KeySym sym, bo
     return true;
 }
 
-static bool send_dynamic_unicode(XTestAPI *api, Display *display, uint32_t codepoint,
-                                 char *error, size_t error_size, int *sent) {
+static DynamicMapping *find_dynamic_mapping(DynamicMappings *mappings, uint32_t codepoint) {
+    for (size_t i = 0; i < mappings->count; ++i) {
+        if (mappings->items[i].active && mappings->items[i].codepoint == codepoint) return &mappings->items[i];
+    }
+    return NULL;
+}
+
+static bool ensure_dynamic_mapping(Display *display, DynamicMappings *mappings, uint32_t codepoint,
+                                   DynamicMapping **result, char *error, size_t error_size) {
+    DynamicMapping *existing = find_dynamic_mapping(mappings, codepoint);
+    if (existing) {
+        *result = existing;
+        return true;
+    }
+    if (mappings->count >= MAX_DYNAMIC_MAPPINGS) {
+        snprintf(error, error_size, "Unicode scratch-key pool exhausted after %zu mappings.", mappings->count);
+        return false;
+    }
+    KeyCode scratch = 0;
+    if (!find_empty_scratch_keycode(display, &scratch) || scratch == 0) {
+        snprintf(error, error_size, "No empty X11 keycode is available for Unicode U+%04X.", codepoint);
+        return false;
+    }
     int per = 0;
-    KeyCode scratch = scratch_keycode(display);
     KeySym *original = XGetKeyboardMapping(display, scratch, 1, &per);
     if (!original || per <= 0) {
         if (original) XFree(original);
-        snprintf(error, error_size, "Unable to inspect X11 keyboard mapping.");
+        snprintf(error, error_size, "Unable to inspect X11 keyboard mapping for keycode %u.", scratch);
         return false;
     }
     KeySym *temporary = calloc((size_t)per, sizeof(KeySym));
-    if (!temporary) { XFree(original); return false; }
+    if (!temporary) {
+        XFree(original);
+        snprintf(error, error_size, "Out of memory while preparing Unicode mapping.");
+        return false;
+    }
     temporary[0] = codepoint <= 0xff ? (KeySym)codepoint : (KeySym)(0x01000000UL | codepoint);
     XChangeKeyboardMapping(display, scratch, per, temporary, 1);
     XSync(display, False);
-    bool pressed = fake_key(api, display, scratch, true);
-    bool released = pressed && fake_key(api, display, scratch, false);
-    if (pressed && !released) (void)fake_key(api, display, scratch, false);
-    bool ok = pressed && released;
-    if (ok) {
-        *sent += 2;
-        /*
-         * X11 key events carry a keycode, not a resolved keysym.  Restoring the
-         * temporary mapping immediately is racy because a busy target client
-         * may process the KeyPress after the server mapping has been restored.
-         * Keep the Unicode mapping live for a short, bounded grace period.
-         */
-        XFlush(display);
-        unsigned long hold_ms = 75;
-        const char *configured = getenv("EMACS_OPERATOR_X11_UNICODE_HOLD_MS");
-        long parsed_hold = 0;
-        if (configured && parse_long(configured, &parsed_hold) && parsed_hold >= 0 && parsed_hold <= 500) {
-            hold_ms = (unsigned long)parsed_hold;
-        }
-        if (hold_ms > 0) sleep_ms(hold_ms);
-    }
-    XChangeKeyboardMapping(display, scratch, per, original, 1);
-    XSync(display, False);
     free(temporary);
-    XFree(original);
-    if (!ok) snprintf(error, error_size, "Unable to inject Unicode code point U+%04X.", codepoint);
+
+    DynamicMapping *slot = &mappings->items[mappings->count++];
+    *slot = (DynamicMapping){
+        .code = scratch,
+        .codepoint = codepoint,
+        .keysyms_per_keycode = per,
+        .original = original,
+        .active = true
+    };
+    *result = slot;
+    return true;
+}
+
+static unsigned long unicode_mapping_grace_ms(void) {
+    unsigned long hold_ms = 250;
+    const char *configured = getenv("EMACS_OPERATOR_X11_UNICODE_HOLD_MS");
+    long parsed_hold = 0;
+    if (configured && parse_long(configured, &parsed_hold) && parsed_hold >= 0 && parsed_hold <= 5000) {
+        hold_ms = (unsigned long)parsed_hold;
+    }
+    return hold_ms;
+}
+
+static void restore_dynamic_mappings(Display *display, DynamicMappings *mappings) {
+    if (!mappings || mappings->count == 0) return;
+    /*
+     * XTEST events contain keycodes.  Clients resolve those keycodes when they
+     * process the queued event and may refresh their keymap by asking the server
+     * after receiving MappingNotify.  Keep every temporary mapping installed
+     * until the whole sequence has been delivered, then allow a bounded grace
+     * interval before restoring the original map.
+     */
+    XFlush(display);
+    XSync(display, False);
+    unsigned long hold_ms = unicode_mapping_grace_ms();
+    if (hold_ms > 0) sleep_ms(hold_ms);
+    for (size_t i = mappings->count; i > 0; --i) {
+        DynamicMapping *item = &mappings->items[i - 1];
+        if (!item->active || !item->original) continue;
+        XChangeKeyboardMapping(display, item->code, item->keysyms_per_keycode, item->original, 1);
+        item->active = false;
+    }
+    XSync(display, False);
+    for (size_t i = 0; i < mappings->count; ++i) {
+        if (mappings->items[i].original) XFree(mappings->items[i].original);
+        mappings->items[i].original = NULL;
+    }
+    mappings->count = 0;
+}
+
+static bool send_dynamic_unicode(XTestAPI *api, Display *display, uint32_t codepoint, DynamicMappings *mappings,
+                                 char *error, size_t error_size, int *sent) {
+    DynamicMapping *mapping = NULL;
+    if (!ensure_dynamic_mapping(display, mappings, codepoint, &mapping, error, error_size)) return false;
+    bool pressed = fake_key(api, display, mapping->code, true);
+    bool released = pressed && fake_key(api, display, mapping->code, false);
+    if (pressed && !released) (void)fake_key(api, display, mapping->code, false);
+    bool ok = pressed && released;
+    if (ok) *sent += 2;
+    else snprintf(error, error_size, "Unable to inject Unicode code point U+%04X.", codepoint);
     return ok;
 }
 
@@ -715,7 +792,8 @@ static bool utf8_next(const unsigned char **cursor, const unsigned char *end, ui
     return false;
 }
 
-static bool send_text(XTestAPI *api, Display *display, Window target, const char *text, char *error, size_t error_size, int *sent) {
+static bool send_text(XTestAPI *api, Display *display, Window target, const char *text, DynamicMappings *mappings,
+                      char *error, size_t error_size, int *sent) {
     const unsigned char *cursor = (const unsigned char *)text;
     const unsigned char *end = cursor + strlen(text);
     while (cursor < end) {
@@ -736,7 +814,7 @@ static bool send_text(XTestAPI *api, Display *display, Window target, const char
         HeldKeys local = {0};
         if (find_keycode_for_keysym(display, sym, &code, &shift) && code) {
             if (!send_existing_keysym(api, display, sym, false, false, error, error_size, sent, &local)) return false;
-        } else if (!send_dynamic_unicode(api, display, cp, error, error_size, sent)) {
+        } else if (!send_dynamic_unicode(api, display, cp, mappings, error, error_size, sent)) {
             return false;
         }
     }
@@ -803,7 +881,7 @@ static bool split_fields(char *line, char **fields, size_t expected) {
 }
 
 static bool execute_event(XTestAPI *api, Display *display, Window target, char **fields, int *sent,
-                          HeldKeys *held, char *error, size_t error_size) {
+                          HeldKeys *held, DynamicMappings *mappings, char *error, size_t error_size) {
     char *kind = fields[0];
     char *key = base64_decode_text(fields[1]);
     char *code = base64_decode_text(fields[2]);
@@ -825,7 +903,7 @@ static bool execute_event(XTestAPI *api, Display *display, Window target, char *
         }
         if (strcmp(kind, "text") == 0) {
             if (!*text) { snprintf(error, error_size, "Text event is empty."); ok = false; break; }
-            ok = send_text(api, display, target, text, error, error_size, sent);
+            ok = send_text(api, display, target, text, mappings, error, error_size, sent);
             continue;
         }
         KeySym sym = named_keysym(key, code);
@@ -949,6 +1027,7 @@ static int command_sequence(Display *display, int argc, char **argv) {
     char *line = malloc(MAX_LINE);
     if (!line) { fclose(file); unload_xtest(&xtest); return fail("E_INTERNAL", "Out of memory."); }
     HeldKeys held = {0};
+    DynamicMappings dynamic_mappings = {0};
     int sent = 0;
     int logical_events = 0;
     bool ok = true;
@@ -960,7 +1039,7 @@ static int command_sequence(Display *display, int argc, char **argv) {
         if (++logical_events > MAX_EVENTS) { snprintf(error, sizeof(error), "Event plan exceeds %d logical events.", MAX_EVENTS); ok = false; break; }
         char *fields[7];
         if (!split_fields(line, fields, 7)) { snprintf(error, sizeof(error), "Event plan line has the wrong field count."); ok = false; break; }
-        if (!execute_event(&xtest, display, target, fields, &sent, &held, error, sizeof(error))) { ok = false; break; }
+        if (!execute_event(&xtest, display, target, fields, &sent, &held, &dynamic_mappings, error, sizeof(error))) { ok = false; break; }
     }
     if (ferror(file)) { snprintf(error, sizeof(error), "Unable to read event plan."); ok = false; }
     fclose(file);
@@ -978,6 +1057,7 @@ static int command_sequence(Display *display, int argc, char **argv) {
     }
     bool restored = false;
     if (restore && has_previous && previous.window != None) restored = focus_window(display, previous.window, 1500);
+    restore_dynamic_mappings(display, &dynamic_mappings);
     unload_xtest(&xtest);
     if (!ok) {
         if (sequence_target_lost) return fail("E_TARGET_NOT_FOUND", error);
