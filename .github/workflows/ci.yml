@@ -1,0 +1,79 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  typescript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --ignore-scripts
+      - run: npm run check:version
+      - run: npm run typecheck
+      - run: npm run test:ts
+      - run: npm run test:agent-experiment
+      - run: npm run check:elisp-structure
+      - run: npm run benchmark:validate
+      - run: bash -n scripts/*.sh
+      - run: bash scripts/package-mcpb.sh "$RUNNER_TEMP/emacs-operator.mcpb"
+      - run: python3 -m zipfile -t "$RUNNER_TEMP/emacs-operator.mcpb"
+
+  emacs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: sudo apt-get update && sudo apt-get install -y emacs-nox
+      - run: npm install --ignore-scripts
+      - run: npm run test:elisp
+
+  linux-x11-host:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: sudo apt-get update
+      - run: sudo apt-get install -y build-essential libx11-dev libpng-dev libxtst6 xvfb x11-utils
+      - run: npm install --ignore-scripts
+      - run: EMACS_OPERATOR_LINUX_RUN_BENCHMARKS=0 npm run accept:linux
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-x11-acceptance
+          path: dist/acceptance/linux-*/**
+          if-no-files-found: ignore
+
+  linux-real-emacs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: sudo apt-get update
+      - run: sudo apt-get install -y build-essential emacs-gtk libx11-dev libpng-dev libxtst6 xvfb x11-utils
+      - run: npm install --ignore-scripts
+      - run: EMACS_OPERATOR_LINUX_REQUIRE_EMACS=1 EMACS_OPERATOR_LINUX_REQUIRE_GUI_EMACS=1 EMACS_OPERATOR_LINUX_RUN_BENCHMARKS=0 npm run accept:linux
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-real-emacs-acceptance
+          path: dist/acceptance/linux-*/**
+          if-no-files-found: ignore
+
+  macos-host:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: swift test --package-path apps/macos-host
+      - run: bash scripts/build-macos-host.sh "$RUNNER_TEMP/EmacsOperatorHost.app"
+      - run: codesign --verify --deep --strict "$RUNNER_TEMP/EmacsOperatorHost.app"
