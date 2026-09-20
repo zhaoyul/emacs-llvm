@@ -210,7 +210,9 @@ async function main(): Promise<void> {
   const reportPath = process.env.EMACS_OPERATOR_LINUX_PACKAGE_ACCEPTANCE_REPORT
     ?? path.join(process.cwd(), "dist", "acceptance", "linux-packages.json");
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
-  const workspace = fs.mkdtempSync(path.join(os.tmpdir(), "emacs-operator-linux-packages-"));
+  const runtimeWorkspace = path.join(process.cwd(), ".runtime");
+  fs.mkdirSync(runtimeWorkspace, { recursive: true, mode: 0o700 });
+  const workspace = fs.mkdtempSync(path.join(runtimeWorkspace, "package-acceptance-"));
   const router = new ToolRouter();
   const sessions = new Set<string>();
   let fatal = false;
@@ -340,6 +342,12 @@ async function main(): Promise<void> {
           if (!sbcl) throw new Error("SLY runtime cannot pass without EMACS_OPERATOR_LINUX_SBCL_RUNTIME_MANIFEST.");
           add({ name: "SLY locked SBCL provenance", package: "sly", status: "pass", details: `SBCL ${sbcl.version} plan_sha256=${sbcl.plan_sha256}`, data: sbcl });
         }
+        const connectCommand = pkg === "cider" ? "emacs-operator-ci-connect-cider" : "emacs-operator-ci-connect-sly";
+        unwrap(await router.call("emacs_command", {
+          session_id: sessionId, command: connectCommand, interactive: true
+        }), `${pkg} explicit runtime connection`);
+        add({ name: `${pkg} explicit runtime connection request`, package: pkg, status: "pass", details: connectCommand });
+
         const deadline = Date.now() + boundedWaitMs();
         let state: AnyRecord | null = null;
         do {
@@ -401,7 +409,13 @@ async function main(): Promise<void> {
         report.packages[pkg] = { status: "pass" };
         add({ name: `${pkg} runtime acceptance`, package: pkg, status: "pass", details: `definition -> value=42 -> structured failure -> source repair -> guarded rerun=42` });
       } finally {
-        if (sessionId) await close(sessionId);
+        if (sessionId) {
+          const disconnectCommand = pkg === "cider" ? "emacs-operator-ci-disconnect-cider" : "emacs-operator-ci-disconnect-sly";
+          try {
+            await router.call("emacs_command", { session_id: sessionId, command: disconnectCommand, interactive: true });
+          } catch { /* best effort; accept-linux.sh still owns bounded process teardown */ }
+          await close(sessionId);
+        }
       }
     };
 

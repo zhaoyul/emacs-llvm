@@ -51,7 +51,13 @@ test('builds an offline package runtime with deterministic source provenance',()
     assert.ok(manifest.packages.sly.entrypoints.includes('slynk/slynk-loader.lisp'));
     assert.ok(manifest.load_paths.some(p=>p.endsWith('/cider-333333333333/lisp')));
     const setup=fs.readFileSync(out.setup,'utf8');
-    assert.match(setup,/require 'paredit/); assert.match(setup,/cider-connect-clj/); assert.match(setup,/sly-connect/);
+    assert.match(setup,/require 'paredit/);
+    assert.match(setup,/setq sly-contribs nil/);
+    assert.match(setup,/defun emacs-operator-ci-connect-cider/);
+    assert.match(setup,/cider-default-session/);
+    assert.match(setup,/defun emacs-operator-ci-connect-sly/);
+    assert.match(setup,/defun emacs-operator-ci-disconnect-package-runtimes/);
+    assert.doesNotMatch(setup,/run-at-time/);
     const env=fs.readFileSync(out.env,'utf8');
     assert.match(env,/EMACS_OPERATOR_LINUX_PACKAGE_RUNTIME_MANIFEST=/);
     assert.match(env,/EMACS_OPERATOR_LINUX_CIDER_SOURCE_ROOT=/);
