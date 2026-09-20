@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://emacs-operator.local/schema/key-sequence.json",
+  "type": "object",
+  "required": ["session_id", "steps"],
+  "properties": {
+    "session_id": {"type": "string", "minLength": 1},
+    "channel": {"enum": ["semantic", "internal_keys", "native_keys"]},
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["kind", "value"],
+            "properties": {"kind": {"const": "keys"}, "value": {"type": "string"}},
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": ["kind", "value"],
+            "properties": {"kind": {"const": "text"}, "value": {"type": "string"}},
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": ["kind", "condition"],
+            "properties": {"kind": {"const": "expect"}, "condition": {"type": "object"}},
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": ["kind", "event"],
+            "properties": {
+              "kind": {"const": "event"},
+              "event": {
+                "type": "object",
+                "required": ["kind"],
+                "properties": {
+                  "kind": {"enum": ["key_down", "key_up", "key_press", "text"]},
+                  "key": {"type": "string"},
+                  "code": {"type": "string"},
+                  "text": {"type": "string"},
+                  "modifiers": {"type": "array", "items": {"type": "string"}},
+                  "repeat": {"type": "integer", "minimum": 1},
+                  "delayAfterMs": {"type": "integer", "minimum": 0}
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "precondition": {"$ref": "precondition.schema.json"},
+    "verify": {"type": "object"},
+    "request_id": {"type": "string"}
+  },
+  "additionalProperties": false
+}

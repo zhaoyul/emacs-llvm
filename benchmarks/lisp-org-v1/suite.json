@@ -1,0 +1,174 @@
+{
+  "$schema": "../../schemas/benchmark-suite.schema.json",
+  "schema_version": "1.0",
+  "id": "lisp-org-v1",
+  "revision": "2026-08-31.2",
+  "title": "Emacs Operator Lisp and Org Semantic Benchmark v1",
+  "description": "Behavior-oriented Lisp and Org tasks scored by independent runtime verifiers. The suite measures these tasks and environments only; it does not establish universal agent superiority.",
+  "defaults": {
+    "timeout_ms": 180000,
+    "trials": 3,
+    "pass_threshold": 1,
+    "max_workspace_bytes": 16777216,
+    "max_agent_output_bytes": 2097152
+  },
+  "tasks": [
+    {
+      "id": "elisp-repair-safe-divide",
+      "title": "Repair zero-safe division",
+      "domain": "elisp",
+      "category": "repair",
+      "difficulty": "small",
+      "prompt_file": "prompts/elisp-repair-safe-divide.md",
+      "fixture_dir": "fixtures/elisp-repair-safe-divide",
+      "tags": ["evaluation", "repair", "condition"],
+      "requirements": {"executables": ["emacs"]},
+      "allowed_paths": ["safe-math.el"],
+      "protected_paths": ["DO_NOT_TOUCH.txt"],
+      "checks": [
+        {"id":"balanced","type":"lisp_balance","path":"safe-math.el","weight":1},
+        {"id":"api","type":"text_contains","path":"safe-math.el","text":"(defun safe-divide ","weight":1},
+        {"id":"runtime","type":"command","command":["emacs","--batch","-Q","-L",".","-l","safe-math.el","-l","${suite}/verifiers/elisp-repair-safe-divide.el"],"stdout_contains":"BENCHMARK_PASS elisp-repair-safe-divide","timeout_ms":30000,"weight":5},
+        {"id":"protected","type":"file_unchanged","path":"DO_NOT_TOUCH.txt","weight":1}
+      ]
+    },
+    {
+      "id": "elisp-symbol-boundary-rename",
+      "title": "Rename an Emacs Lisp symbol without collateral text edits",
+      "domain": "elisp",
+      "category": "refactor",
+      "difficulty": "medium",
+      "prompt_file": "prompts/elisp-symbol-boundary-rename.md",
+      "fixture_dir": "fixtures/elisp-symbol-boundary-rename",
+      "tags": ["rename", "symbol-boundary", "comment-string-safety"],
+      "requirements": {"executables": ["emacs"]},
+      "allowed_paths": ["invoice.el"],
+      "protected_paths": ["DO_NOT_TOUCH.txt"],
+      "checks": [
+        {"id":"balanced","type":"lisp_balance","path":"invoice.el"},
+        {"id":"new-name","type":"text_contains","path":"invoice.el","text":"invoice-subtotal","min_count":2},
+        {"id":"qualified-preserved","type":"text_contains","path":"invoice.el","text":"billing/invoice-total"},
+        {"id":"runtime","type":"command","command":["emacs","--batch","-Q","-L",".","-l","invoice.el","-l","${suite}/verifiers/elisp-symbol-boundary-rename.el"],"stdout_contains":"BENCHMARK_PASS elisp-symbol-boundary-rename","timeout_ms":30000,"weight":5},
+        {"id":"protected","type":"file_unchanged","path":"DO_NOT_TOUCH.txt"}
+      ]
+    },
+    {
+      "id": "elisp-extract-helper",
+      "title": "Extract a behavior-preserving Emacs Lisp helper",
+      "domain": "elisp",
+      "category": "refactor",
+      "difficulty": "medium",
+      "prompt_file": "prompts/elisp-extract-helper.md",
+      "fixture_dir": "fixtures/elisp-extract-helper",
+      "tags": ["extract-function", "free-variable-analysis", "evaluation"],
+      "requirements": {"executables": ["emacs"]},
+      "allowed_paths": ["invoice-calc.el"],
+      "protected_paths": ["DO_NOT_TOUCH.txt"],
+      "checks": [
+        {"id":"balanced","type":"lisp_balance","path":"invoice-calc.el"},
+        {"id":"helper","type":"text_contains","path":"invoice-calc.el","text":"(defun invoice-subtotal ","weight":2},
+        {"id":"runtime","type":"command","command":["emacs","--batch","-Q","-L",".","-l","invoice-calc.el","-l","${suite}/verifiers/elisp-extract-helper.el"],"stdout_contains":"BENCHMARK_PASS elisp-extract-helper","timeout_ms":30000,"weight":5},
+        {"id":"protected","type":"file_unchanged","path":"DO_NOT_TOUCH.txt"}
+      ]
+    },
+    {
+      "id": "clojure-qualified-symbol-rename",
+      "title": "Rename a Clojure var while preserving namespace qualification",
+      "domain": "clojure",
+      "category": "refactor",
+      "difficulty": "medium",
+      "prompt_file": "prompts/clojure-qualified-symbol-rename.md",
+      "fixture_dir": "fixtures/clojure-qualified-symbol-rename",
+      "tags": ["cider", "namespace", "rename"],
+      "requirements": {"executables": ["clojure"]},
+      "allowed_paths": ["src/**/*.clj"],
+      "protected_paths": ["DO_NOT_TOUCH.txt"],
+      "checks": [
+        {"id":"math-balanced","type":"lisp_balance","path":"src/bench/math.clj"},
+        {"id":"app-balanced","type":"lisp_balance","path":"src/bench/app.clj"},
+        {"id":"new-qualified-call","type":"text_contains","path":"src/bench/app.clj","text":"math/add"},
+        {"id":"runtime","type":"command","command":["clojure","-cp","src","${suite}/verifiers/clojure-qualified-symbol-rename.clj"],"stdout_contains":"BENCHMARK_PASS clojure-qualified-symbol-rename","timeout_ms":60000,"weight":5},
+        {"id":"protected","type":"file_unchanged","path":"DO_NOT_TOUCH.txt"}
+      ]
+    },
+    {
+      "id": "common-lisp-package-rename",
+      "title": "Rename an exported Common Lisp symbol",
+      "domain": "common_lisp",
+      "category": "refactor",
+      "difficulty": "medium",
+      "prompt_file": "prompts/common-lisp-package-rename.md",
+      "fixture_dir": "fixtures/common-lisp-package-rename",
+      "tags": ["sly", "package", "rename"],
+      "requirements": {"executables": ["sbcl"]},
+      "allowed_paths": ["src/**/*.lisp"],
+      "protected_paths": ["DO_NOT_TOUCH.txt"],
+      "checks": [
+        {"id":"math-balanced","type":"lisp_balance","path":"src/math.lisp"},
+        {"id":"app-balanced","type":"lisp_balance","path":"src/app.lisp"},
+        {"id":"external-call","type":"text_contains","path":"src/app.lisp","text":"bench.math:add"},
+        {"id":"runtime","type":"command","command":["sbcl","--noinform","--disable-debugger","--non-interactive","--load","src/math.lisp","--load","src/app.lisp","--load","${suite}/verifiers/common-lisp-package-rename.lisp"],"stdout_contains":"BENCHMARK_PASS common-lisp-package-rename","timeout_ms":60000,"weight":5},
+        {"id":"protected","type":"file_unchanged","path":"DO_NOT_TOUCH.txt"}
+      ]
+    },
+    {
+      "id": "org-build-project-section",
+      "title": "Author a structured Org project section with table and Babel",
+      "domain": "org",
+      "category": "authoring",
+      "difficulty": "medium",
+      "prompt_file": "prompts/org-build-project-section.md",
+      "fixture_dir": "fixtures/org-build-project-section",
+      "tags": ["org", "table", "babel", "authoring"],
+      "requirements": {"executables": ["emacs"]},
+      "allowed_paths": ["notes.org"],
+      "protected_paths": ["DO_NOT_TOUCH.txt"],
+      "checks": [
+        {"id":"structure","type":"org_structure","path":"notes.org","expect":{"exact_headings":3,"required_titles":["Project Alpha","Metrics","Computation"],"exact_tables":1,"exact_src_blocks":1,"required_languages":["emacs-lisp"],"required_properties":{"OWNER":"Kevin"}},"weight":3},
+        {"id":"intro","type":"text_contains","path":"notes.org","text":"Existing introduction. Keep this line."},
+        {"id":"runtime","type":"command","command":["emacs","--batch","-Q","-l","${suite}/verifiers/org-build-project-section.el"],"stdout_contains":"BENCHMARK_PASS org-build-project-section","timeout_ms":30000,"weight":5},
+        {"id":"protected","type":"file_unchanged","path":"DO_NOT_TOUCH.txt"}
+      ]
+    },
+    {
+      "id": "org-rewrite-subtree",
+      "title": "Rewrite one Org subtree while preserving descendants and siblings",
+      "domain": "org",
+      "category": "refactor",
+      "difficulty": "medium",
+      "prompt_file": "prompts/org-rewrite-subtree.md",
+      "fixture_dir": "fixtures/org-rewrite-subtree",
+      "tags": ["org", "subtree", "preservation"],
+      "requirements": {"executables": ["emacs"]},
+      "allowed_paths": ["notes.org"],
+      "protected_paths": ["DO_NOT_TOUCH.txt"],
+      "checks": [
+        {"id":"structure","type":"org_structure","path":"notes.org","expect":{"exact_headings":3,"required_titles":["Delivery Plan","Child","Unrelated"],"required_properties":{"OWNER":"Kevin"}},"weight":3},
+        {"id":"child-preserved","type":"text_contains","path":"notes.org","text":"Keep this child text exactly."},
+        {"id":"old-body-removed","type":"text_not_contains","path":"notes.org","text":"Old body that must be replaced."},
+        {"id":"runtime","type":"command","command":["emacs","--batch","-Q","-l","${suite}/verifiers/org-rewrite-subtree.el"],"stdout_contains":"BENCHMARK_PASS org-rewrite-subtree","timeout_ms":30000,"weight":5},
+        {"id":"protected","type":"file_unchanged","path":"DO_NOT_TOUCH.txt"}
+      ]
+    },
+    {
+      "id": "org-table-babel-recalculate",
+      "title": "Edit an Org table and recalculate its Babel result",
+      "domain": "org",
+      "category": "evaluation",
+      "difficulty": "medium",
+      "prompt_file": "prompts/org-table-babel-recalculate.md",
+      "fixture_dir": "fixtures/org-table-babel-recalculate",
+      "tags": ["org", "table", "babel", "evaluation"],
+      "requirements": {"executables": ["emacs"]},
+      "allowed_paths": ["calculation.org"],
+      "protected_paths": ["DO_NOT_TOUCH.txt"],
+      "checks": [
+        {"id":"structure","type":"org_structure","path":"calculation.org","expect":{"exact_headings":3,"required_titles":["Values","Result","Notes"],"exact_tables":1,"exact_src_blocks":1,"required_languages":["emacs-lisp"]},"weight":2},
+        {"id":"single-results","type":"regex_count","path":"calculation.org","pattern":"^#\\+RESULTS:","flags":"gmu","min_count":1,"max_count":1},
+        {"id":"note-preserved","type":"text_contains","path":"calculation.org","text":"Preserve this note exactly."},
+        {"id":"runtime","type":"command","command":["emacs","--batch","-Q","-l","${suite}/verifiers/org-table-babel-recalculate.el"],"stdout_contains":"BENCHMARK_PASS org-table-babel-recalculate","timeout_ms":30000,"weight":5},
+        {"id":"protected","type":"file_unchanged","path":"DO_NOT_TOUCH.txt"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "id": "semantic-reference",
+  "revision": "2026-08-31.1",
+  "label": "Deterministic semantic reference",
+  "kind": "deterministic_harness_probe",
+  "tool_profile": "language-aware-structured-reference",
+  "prompt_policy": "benchmark-directive-v1",
+  "cross_trial_memory": "disabled",
+  "network_access": "disabled",
+  "description": "A deterministic implementation used only to verify benchmark sensitivity and release plumbing. It is not an LLM result.",
+  "pairing_key": "harness-sensitivity-deterministic-v1",
+  "provider": "local-deterministic",
+  "model": "benchmark-probe",
+  "model_version": "1",
+  "temperature": 0,
+  "top_p": 1,
+  "max_context_tokens": 4096
+}

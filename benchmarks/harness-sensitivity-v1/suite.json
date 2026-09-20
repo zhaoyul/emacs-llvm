@@ -1,0 +1,240 @@
+{
+  "schema_version": "1.0",
+  "id": "harness-sensitivity-v1",
+  "revision": "2026-08-31.1",
+  "title": "Emacs Operator benchmark harness sensitivity v1",
+  "description": "Portable deterministic tasks used only to verify that the benchmark harness detects semantic correctness, collateral text edits, syntax damage, Org structure damage, protected-file edits, and unauthorized-path edits. Reference-versus-naive results are not evidence of LLM superiority.",
+  "defaults": {
+    "timeout_ms": 15000,
+    "trials": 1,
+    "pass_threshold": 1,
+    "max_workspace_bytes": 16777216,
+    "max_agent_output_bytes": 2097152
+  },
+  "tasks": [
+    {
+      "id": "elisp-symbol-boundary-rename",
+      "title": "Rename an exact Emacs Lisp symbol",
+      "domain": "elisp",
+      "category": "refactor",
+      "difficulty": "small",
+      "prompt_file": "prompts/elisp-symbol-boundary-rename.md",
+      "fixture_dir": "fixtures/elisp-symbol-boundary-rename",
+      "allowed_paths": [
+        "main.el"
+      ],
+      "protected_paths": [
+        "DO_NOT_TOUCH.txt"
+      ],
+      "checks": [
+        {
+          "id": "exact",
+          "type": "exact_text",
+          "path": "main.el",
+          "expected_file": "expected/elisp-symbol-boundary-rename/main.el",
+          "weight": 4
+        },
+        {
+          "id": "balanced",
+          "type": "lisp_balance",
+          "path": "main.el",
+          "weight": 1
+        },
+        {
+          "id": "protected",
+          "type": "file_unchanged",
+          "path": "DO_NOT_TOUCH.txt",
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "id": "clojure-qualified-symbol-rename",
+      "title": "Rename a qualified Clojure symbol leaf",
+      "domain": "clojure",
+      "category": "refactor",
+      "difficulty": "medium",
+      "prompt_file": "prompts/clojure-qualified-symbol-rename.md",
+      "fixture_dir": "fixtures/clojure-qualified-symbol-rename",
+      "allowed_paths": [
+        "core.clj"
+      ],
+      "protected_paths": [
+        "DO_NOT_TOUCH.txt"
+      ],
+      "checks": [
+        {
+          "id": "exact",
+          "type": "exact_text",
+          "path": "core.clj",
+          "expected_file": "expected/clojure-qualified-symbol-rename/core.clj",
+          "weight": 4
+        },
+        {
+          "id": "balanced",
+          "type": "lisp_balance",
+          "path": "core.clj",
+          "weight": 1
+        },
+        {
+          "id": "alias-preserved",
+          "type": "text_contains",
+          "path": "core.clj",
+          "text": "calc/sum",
+          "weight": 1
+        },
+        {
+          "id": "protected",
+          "type": "file_unchanged",
+          "path": "DO_NOT_TOUCH.txt",
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "id": "common-lisp-package-rename",
+      "title": "Rename an external Common Lisp package symbol",
+      "domain": "common_lisp",
+      "category": "refactor",
+      "difficulty": "medium",
+      "prompt_file": "prompts/common-lisp-package-rename.md",
+      "fixture_dir": "fixtures/common-lisp-package-rename",
+      "allowed_paths": [
+        "package.lisp"
+      ],
+      "protected_paths": [
+        "DO_NOT_TOUCH.txt"
+      ],
+      "checks": [
+        {
+          "id": "exact",
+          "type": "exact_text",
+          "path": "package.lisp",
+          "expected_file": "expected/common-lisp-package-rename/package.lisp",
+          "weight": 4
+        },
+        {
+          "id": "balanced",
+          "type": "lisp_balance",
+          "path": "package.lisp",
+          "weight": 1
+        },
+        {
+          "id": "internal-preserved",
+          "type": "text_contains",
+          "path": "package.lisp",
+          "text": "app::sum",
+          "weight": 1
+        },
+        {
+          "id": "protected",
+          "type": "file_unchanged",
+          "path": "DO_NOT_TOUCH.txt",
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "id": "lisp-balance-repair",
+      "title": "Repair a missing Lisp delimiter",
+      "domain": "elisp",
+      "category": "repair",
+      "difficulty": "small",
+      "prompt_file": "prompts/lisp-balance-repair.md",
+      "fixture_dir": "fixtures/lisp-balance-repair",
+      "allowed_paths": [
+        "main.el"
+      ],
+      "protected_paths": [
+        "DO_NOT_TOUCH.txt"
+      ],
+      "checks": [
+        {
+          "id": "exact",
+          "type": "exact_text",
+          "path": "main.el",
+          "expected_file": "expected/lisp-balance-repair/main.el",
+          "weight": 4
+        },
+        {
+          "id": "balanced",
+          "type": "lisp_balance",
+          "path": "main.el",
+          "weight": 2
+        },
+        {
+          "id": "call-preserved",
+          "type": "text_contains",
+          "path": "main.el",
+          "text": "(add-two 40)",
+          "weight": 1
+        },
+        {
+          "id": "protected",
+          "type": "file_unchanged",
+          "path": "DO_NOT_TOUCH.txt",
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "id": "org-structured-authoring",
+      "title": "Author a structured Org section",
+      "domain": "org",
+      "category": "authoring",
+      "difficulty": "medium",
+      "prompt_file": "prompts/org-structured-authoring.md",
+      "fixture_dir": "fixtures/org-structured-authoring",
+      "allowed_paths": [
+        "notes.org"
+      ],
+      "protected_paths": [
+        "DO_NOT_TOUCH.txt"
+      ],
+      "checks": [
+        {
+          "id": "exact",
+          "type": "exact_text",
+          "path": "notes.org",
+          "expected_file": "expected/org-structured-authoring/notes.org",
+          "weight": 4
+        },
+        {
+          "id": "structure",
+          "type": "org_structure",
+          "path": "notes.org",
+          "expect": {
+            "exact_headings": 3,
+            "required_titles": [
+              "Project",
+              "Data",
+              "Computation"
+            ],
+            "exact_tables": 1,
+            "exact_src_blocks": 1,
+            "required_languages": [
+              "emacs-lisp"
+            ],
+            "required_properties": {
+              "OWNER": "Kevin"
+            }
+          },
+          "weight": 3
+        },
+        {
+          "id": "intro-preserved",
+          "type": "text_contains",
+          "path": "notes.org",
+          "text": "Existing introduction. Keep this line.",
+          "weight": 1
+        },
+        {
+          "id": "protected",
+          "type": "file_unchanged",
+          "path": "DO_NOT_TOUCH.txt",
+          "weight": 1
+        }
+      ]
+    }
+  ]
+}

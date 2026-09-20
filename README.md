@@ -2,7 +2,7 @@
 
 Emacs Operator exposes GNU Emacs as a stateful runtime for LLM agents. It combines structured semantic operations, Emacs-internal key events, and guarded OS-native input instead of treating Emacs as only a text file editor.
 
-Current version: `0.1.0-alpha.14`.
+Current version: `0.1.0-alpha.16`.
 
 ## Execution channels
 
@@ -12,48 +12,23 @@ Current version: `0.1.0-alpha.14`.
 
 The default rule is: prefer semantic operations for deterministic intent, use `internal_keys` when Emacs keymap/interactive behavior matters, and reserve `native_keys` for actual desktop input verification.
 
-## Alpha.14 status
+## Alpha.16 status
 
-The Linux hard gate also covers two simultaneous real Emacs GUI instances. Stale-record cleanup is isolation-aware: if `/proc` is hidden and `process-attributes` cannot verify a peer PID, the bridge probes that PID with signal 0 before deleting its token/instance record.
+Linux remains the authoritative implementation platform. Alpha.16 makes acceptance reproducible when GNU Emacs is not preinstalled: it can resolve a private runtime, lock and provision a local Debian package set, and acquire Paredit/CIDER/SLY source trees at exact pinned commits.
 
-Linux is the current authoritative acceptance platform.
-The current alpha.14 full Linux hard gate completes with exit code 0 and a unified PASS summary.
+Current alpha.16 evidence in this session:
 
-Verified on GNU Emacs 30.2 under Linux/Xvfb:
+- TypeScript: 93/93 PASS;
+- Agent experiment: 18/18 PASS;
+- Refactor intelligence: 29/29 PASS;
+- Linux Host: 11/11 PASS;
+- Swift portable: 5/5 PASS;
+- X11/XTEST native acceptance: PASS;
+- Linux reliability: 8/8 PASS;
+- GNU Emacs ERT: NOT_RUN because this session currently has no GNU Emacs 29+ executable;
+- Paredit/CIDER/SLY package runtime: NOT_RUN, never inferred from capability probes.
 
-- ERT: 63 PASS, 0 FAIL, 1 conditional paredit test skipped because paredit is not installed in the acceptance runtime;
-- live Bridge discovery and authenticated loopback RPC;
-- exact `emacs_read`, background `emacs_navigate`, structured Elisp evaluation and validation;
-- checkpoint/rollback and runtime-condition repair loops;
-- Org heading/table/Babel construction, execution and structural validation;
-- high-level Lisp/Org workflows, including repeatable `extract_function` acceptance in a long-lived Emacs runtime;
-- internal-key command verification;
-- Linux X11/XTEST native input, Unicode delivery, focus restoration, private PNG capture, cancellation and multi-instance routing.
-
-Alpha.14 adds an explicit package-specific runtime gate:
-
-```bash
-npm run accept:linux-packages
-```
-
-It reports each of `paredit`, `cider`, and `sly` as `pass`, `not_run`, or `fail`. A package capability probe is never counted as runtime acceptance.
-
-Current acceptance environment status:
-
-- paredit: `not_run`, package not installed/autoloaded;
-- CIDER: `not_run`, package/nREPL runtime unavailable;
-- SLY: `not_run`, package/Slynk runtime unavailable.
-
-Use hard requirements in CI when those ecosystems are installed:
-
-```bash
-EMACS_OPERATOR_LINUX_REQUIRE_PAREDIT=1 \
-EMACS_OPERATOR_LINUX_REQUIRE_CIDER=1 \
-EMACS_OPERATOR_LINUX_REQUIRE_SLY=1 \
-npm run accept:linux
-```
-
-Missing required package/runtime coverage then fails the Linux gate.
+The release gate supports segmented evidence so a separately completed `accept:linux` report can be reused without rerunning a long desktop suite. See `docs/linux-private-emacs-runtime.md`.
 
 ## Package-specific acceptance
 
@@ -76,7 +51,7 @@ Package gates exercise actual behavior:
 
 See `docs/linux-package-acceptance.md`.
 
-## Important alpha.14 fix
+## Important live-runtime fix
 
 `extract_function` can optionally load both the generated helper and its enclosing definition before behavior verification. This is necessary in a live Lisp runtime: loading only the helper leaves the old enclosing function definition resident even though the buffer text has changed. The workflow acceptance now uses unique per-run generated function names, so repeated acceptance in the same long-lived Emacs does not create false name-collision failures.
 

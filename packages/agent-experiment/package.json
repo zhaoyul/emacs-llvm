@@ -1,0 +1,16 @@
+{
+  "name": "@emacs-operator/agent-experiment",
+  "version": "0.1.0-alpha.16",
+  "private": true,
+  "type": "module",
+  "description": "Provider-neutral external agent wrappers and paired experiment orchestration for Emacs Operator benchmarks.",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "preflight": "node src/cli.mjs preflight",
+    "invoke": "node src/cli.mjs invoke",
+    "pair": "node src/cli.mjs pair"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

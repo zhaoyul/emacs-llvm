@@ -1,0 +1,7 @@
+import test from "node:test"; import assert from "node:assert/strict";
+import {normalizeAnalysisEnvelope,buildExtractFunctionArguments,projectRenameCommandSequence,runGuardedVerification} from "../src/index.js";
+test("normalizes old and new analysis shapes",()=>{assert.deepEqual(normalizeAnalysisEnvelope({analysis:{parameters:["x"]}}),{parameters:["x"]});assert.deepEqual(normalizeAnalysisEnvelope({parameters:["x"]}),{parameters:["x"]});});
+test("extract refuses unresolved inference",()=>{assert.throws(()=>buildExtractFunctionArguments({analysis:{parameters:["x"],unresolved:["mystery"]},newName:"g",bounds:[1,5]}),e=>e.code==="E_ANALYSIS_UNRESOLVED");});
+test("extract accepts explicit override",()=>{const r=buildExtractFunctionArguments({analysis:{parameters:["x"],unresolved:["mystery"]},explicitParameters:["x","mystery"],newName:"g",bounds:[1,5]});assert.deepEqual(r.parameters,["x","mystery"]);});
+test("project rename is always plan then apply",()=>{assert.equal(projectRenameCommandSequence({oldSymbol:"foo",newSymbol:"bar"})[0].mutates,false);assert.equal(projectRenameCommandSequence({planId:"abc"})[0].save,false);});
+test("guarded verification repairs only after changed source",async()=>{let n=0;const r=await runGuardedVerification({sideEffectRisk:"low",maxAttempts:3,evaluate:async()=>{n+=1;return n===1?{completed:false,source_sha256:"a",condition:"err"}:{completed:true,source_sha256:"b",value:"42"};},repair:async()=>{}});assert.equal(r.status,"completed");assert.equal(r.attempts.length,2);});

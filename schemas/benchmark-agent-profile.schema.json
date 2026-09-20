@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://redcreation.cn/schemas/emacs-operator/benchmark-agent-profile-1.0.json",
+  "title": "Emacs Operator benchmark agent profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "revision", "label", "kind", "tool_profile", "prompt_policy"],
+  "properties": {
+    "$schema": {"type": "string"},
+    "schema_version": {"const": "1.0"},
+    "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "revision": {"type": "string", "minLength": 1, "maxLength": 128},
+    "label": {"type": "string", "minLength": 1, "maxLength": 256},
+    "kind": {"enum": ["deterministic_harness_probe", "llm_experiment", "custom"]},
+    "pairing_key": {"type": "string", "minLength": 1, "maxLength": 256},
+    "provider": {"type": "string", "minLength": 1, "maxLength": 256},
+    "model": {"type": "string", "minLength": 1, "maxLength": 256},
+    "model_version": {"type": "string", "minLength": 1, "maxLength": 256},
+    "tool_profile": {"type": "string", "minLength": 1, "maxLength": 256},
+    "prompt_policy": {"type": "string", "minLength": 1, "maxLength": 256},
+    "temperature": {"type": "number", "minimum": 0, "maximum": 100},
+    "top_p": {"type": "number", "minimum": 0, "maximum": 1},
+    "max_context_tokens": {"type": "integer", "minimum": 1, "maximum": 100000000},
+    "cross_trial_memory": {"enum": ["disabled", "enabled", "unknown"]},
+    "network_access": {"enum": ["disabled", "enabled", "unknown"]},
+    "description": {"type": "string", "maxLength": 8192},
+    "notes": {"type": "array", "maxItems": 64, "items": {"type": "string", "minLength": 1, "maxLength": 2048}}
+  }
+}

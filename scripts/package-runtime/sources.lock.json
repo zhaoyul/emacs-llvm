@@ -1,0 +1,120 @@
+{
+  "schema_version": "1.1",
+  "minimum_emacs_version": "29.2",
+  "sources": {
+    "paredit": {
+      "kind": "git",
+      "repository": "https://github.com/emacsmirror/paredit.git",
+      "commit": "af075775af91f2dbc63b915d762b4aec092946c4",
+      "version": "27~git20241103.1.af07577",
+      "entrypoints": ["paredit.el"],
+      "load_paths": ["."]
+    },
+    "cider": {
+      "kind": "git",
+      "repository": "https://github.com/clojure-emacs/cider.git",
+      "commit": "c17d11494b35502079caeac2fe7c39173349ce10",
+      "version": "2.0.1",
+      "entrypoints": ["lisp/cider.el"],
+      "load_paths": ["lisp"],
+      "emacs_dependencies": [
+        "clojure-mode",
+        "compat",
+        "parseedn",
+        "parseclj",
+        "queue",
+        "spinner",
+        "sesman"
+      ],
+      "runtime_dependencies": {
+        "clojure": "1.12.0",
+        "nrepl": "1.7.0",
+        "cider-nrepl": "0.62.2"
+      }
+    },
+    "clojure-mode": {
+      "kind": "git",
+      "repository": "https://github.com/clojure-emacs/clojure-mode.git",
+      "commit": "3c68569738f04a22d52f1ca28f593c2ee733bf04",
+      "version": "5.23.0",
+      "entrypoints": ["clojure-mode.el"],
+      "load_paths": ["."]
+    },
+    "compat": {
+      "kind": "git",
+      "repository": "https://github.com/emacs-compat/compat.git",
+      "commit": "90880f81419577e1d3f68424d2a3adf31e6d663e",
+      "version": "31.1.0.0",
+      "entrypoints": ["compat.el"],
+      "load_paths": ["."]
+    },
+    "parseedn": {
+      "kind": "git",
+      "repository": "https://github.com/clojure-emacs/parseedn.git",
+      "commit": "1a28a88e2aabd99b41e02f491d6b8874ec128d7d",
+      "version": "1.2.1",
+      "entrypoints": ["parseedn.el"],
+      "load_paths": ["."]
+    },
+    "parseclj": {
+      "kind": "git",
+      "repository": "https://github.com/clojure-emacs/parseclj.git",
+      "commit": "ca828c202c026e45bd60503984cf510d904cae50",
+      "version": "1.1.1",
+      "entrypoints": ["parseclj.el", "parseclj-parser.el"],
+      "load_paths": ["."]
+    },
+    "queue": {
+      "kind": "git",
+      "repository": "https://github.com/emacs-packages/queue.el.git",
+      "commit": "cbeb1b8573023a7768d8038c2d046d35210e0d81",
+      "version": "0.2.1",
+      "entrypoints": ["queue.el"],
+      "load_paths": ["."]
+    },
+    "spinner": {
+      "kind": "git",
+      "repository": "https://github.com/Malabarba/spinner.el.git",
+      "commit": "d4647ae87fb0cd24bc9081a3d287c860ff061c21",
+      "version": "1.7.4",
+      "entrypoints": ["spinner.el"],
+      "load_paths": ["."]
+    },
+    "sesman": {
+      "kind": "git",
+      "repository": "https://github.com/vspinu/sesman.git",
+      "commit": "7eb733acb33e610a53979fa7fc13393eeda3cc53",
+      "version": "0.3.3-DEV",
+      "entrypoints": ["sesman.el"],
+      "load_paths": ["."]
+    },
+    "sly": {
+      "kind": "git",
+      "repository": "https://github.com/joaotavora/sly.git",
+      "commit": "3ffa216d0818972f7a7fea38a566a6b570349f3b",
+      "version": "master@2026-08-01",
+      "entrypoints": ["sly.el", "slynk/slynk-loader.lisp"],
+      "load_paths": ["."],
+      "runtime_dependencies": {
+        "common-lisp": "sbcl-2.6.8",
+        "slynk": "source-tree matched"
+      }
+    }
+  },
+  "runtime_plans": {
+    "linux-package-runtime": {
+      "sources": [
+        "paredit",
+        "clojure-mode",
+        "compat",
+        "parseclj",
+        "parseedn",
+        "queue",
+        "spinner",
+        "sesman",
+        "cider",
+        "sly"
+      ]
+    }
+  }
+}

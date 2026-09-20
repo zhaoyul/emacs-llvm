@@ -1,0 +1,6 @@
+{
+  "name": "@emacs-operator/protocol",
+  "version": "0.1.0-alpha.16",
+  "private": true,
+  "type": "module"
+}

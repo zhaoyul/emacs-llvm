@@ -1,0 +1,15 @@
+{
+  "name": "@emacs-operator/linux-host",
+  "version": "0.1.0-alpha.16",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:native": "make all",
+    "clean": "make clean",
+    "start": "node src/host.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

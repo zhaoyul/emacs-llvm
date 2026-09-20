@@ -1,0 +1,224 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://redcreation.cn/schemas/emacs-operator/benchmark-report-1.0.json",
+  "title": "Emacs Operator benchmark report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "runner_version",
+    "run_id",
+    "created_at",
+    "suite",
+    "agent",
+    "options",
+    "environment",
+    "integrity",
+    "tasks",
+    "trials",
+    "aggregate",
+    "ok",
+    "errors"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "kind": {
+      "const": "emacs_operator_benchmark_report"
+    },
+    "runner_version": {
+      "type": "string"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "suite": {
+      "type": "object",
+      "required": [
+        "id",
+        "revision",
+        "title",
+        "digest"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "agent": {
+      "type": "object",
+      "required": [
+        "id",
+        "mode"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "mode": {
+          "type": "string"
+        },
+        "descriptor": {
+          "type": "object"
+        }
+      }
+    },
+    "options": {
+      "type": "object"
+    },
+    "environment": {
+      "type": "object"
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "trials": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "trial_id",
+          "task_id",
+          "task_digest",
+          "trial",
+          "trial_seed",
+          "status",
+          "agent_status",
+          "score",
+          "metrics"
+        ],
+        "properties": {
+          "trial_id": {
+            "type": "string"
+          },
+          "task_id": {
+            "type": "string"
+          },
+          "task_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "trial": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "trial_seed": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4294967295
+          },
+          "status": {
+            "enum": [
+              "passed",
+              "failed",
+              "agent_error",
+              "timeout",
+              "harness_error"
+            ]
+          },
+          "agent_status": {
+            "enum": [
+              "completed",
+              "failed",
+              "refused",
+              "timeout",
+              "protocol_error"
+            ]
+          },
+          "score": {
+            "type": "object"
+          },
+          "metrics": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "aggregate": {
+      "type": "object",
+      "required": [
+        "tasks_total",
+        "trials_executed",
+        "trials_passed",
+        "trials_failed"
+      ]
+    },
+    "ok": {
+      "type": "boolean"
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "oracle_fields_excluded_from_request",
+        "agent_process_os_sandboxed",
+        "command_checks_explicitly_enabled",
+        "command_checks_use_disposable_workspace_copy",
+        "command_process_os_sandboxed",
+        "note"
+      ],
+      "properties": {
+        "oracle_fields_excluded_from_request": {
+          "const": true
+        },
+        "agent_process_os_sandboxed": {
+          "const": false
+        },
+        "command_checks_explicitly_enabled": {
+          "type": "boolean"
+        },
+        "command_checks_use_disposable_workspace_copy": {
+          "const": true
+        },
+        "command_process_os_sandboxed": {
+          "const": false
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

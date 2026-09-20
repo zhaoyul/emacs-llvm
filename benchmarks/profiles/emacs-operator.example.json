@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "id": "emacs-operator",
+  "revision": "replace-for-each-experiment",
+  "label": "Same-model Emacs Operator candidate",
+  "kind": "llm_experiment",
+  "pairing_key": "replace-with-shared-model-and-sampling-config-id",
+  "provider": "replace-with-provider",
+  "model": "replace-with-exact-model-name",
+  "model_version": "replace-with-model-snapshot-or-date",
+  "tool_profile": "emacs-operator-semantic-internal-native",
+  "prompt_policy": "lisp-org-v1-identical-task-prompts",
+  "temperature": 0,
+  "top_p": 1,
+  "max_context_tokens": 128000,
+  "cross_trial_memory": "disabled",
+  "network_access": "disabled",
+  "notes": [
+    "Use the same model, model snapshot, system prompt, sampling controls, context budget, and wrapper implementation as the baseline.",
+    "Enable Emacs Operator tools and keep ordinary filesystem access equivalent to the baseline unless the experiment explicitly studies another contrast."
+  ]
+}

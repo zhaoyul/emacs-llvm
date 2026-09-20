@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://redcreation.cn/schemas/emacs-operator/benchmark-comparison-1.0.json",
+  "title": "Emacs Operator paired benchmark comparison",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "created_at",
+    "suite",
+    "baseline",
+    "candidate",
+    "pairs",
+    "summary",
+    "interpretation"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "kind": {
+      "const": "emacs_operator_benchmark_comparison"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "suite": {
+      "type": "object"
+    },
+    "baseline": {
+      "type": "object"
+    },
+    "candidate": {
+      "type": "object"
+    },
+    "pairs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "task_id",
+          "trial",
+          "trial_seed",
+          "baseline",
+          "candidate",
+          "outcome"
+        ],
+        "properties": {
+          "task_id": {
+            "type": "string"
+          },
+          "trial": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "trial_seed": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4294967295
+          },
+          "baseline": {
+            "type": "object"
+          },
+          "candidate": {
+            "type": "object"
+          },
+          "outcome": {
+            "enum": [
+              "candidate_win",
+              "baseline_win",
+              "tie"
+            ]
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "paired_trials",
+        "candidate_wins",
+        "baseline_wins",
+        "ties",
+        "candidate_advantage",
+        "bootstrap_95_ci"
+      ]
+    },
+    "interpretation": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

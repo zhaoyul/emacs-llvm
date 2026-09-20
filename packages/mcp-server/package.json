@@ -1,0 +1,9 @@
+{
+  "name": "@emacs-operator/mcp-server",
+  "version": "0.1.0-alpha.16",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "emacs-operator-mcp": "../../dist/packages/mcp-server/src/server.js"
+  }
+}
