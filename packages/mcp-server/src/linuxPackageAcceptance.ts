@@ -376,7 +376,16 @@ async function main(): Promise<void> {
         const behavior = evaluationResult(unwrap(await router.call("emacs_eval", {
           session_id: sessionId, language: "repl", adapter: pkg, operation: "eval_last_sexp", timeout_ms: 10000
         }), `${pkg} behavior eval`), `${pkg} behavior evaluation`);
-        if (behavior.completed !== true || String(behavior.value).trim() !== "42") throw new Error(`${pkg} expected value 42, got ${String(behavior.value)} (${String(behavior.condition ?? "no condition")}).`);
+        if (behavior.completed !== true || String(behavior.value).trim() !== "42") {
+          const diagnostic = {
+            value: behavior.value ?? null,
+            condition: behavior.condition ?? null,
+            stderr: behavior.stderr ?? null,
+            namespace_or_package: behavior.namespace_or_package ?? null,
+            metadata: behavior.metadata ?? null
+          };
+          throw new Error(`${pkg} expected value 42: ${JSON.stringify(diagnostic)}`);
+        }
 
         unwrap(await router.call("emacs_navigate", { session_id: sessionId, operation: "search_forward", query: "(/ 1 0)" }), `${pkg} find failing form`);
         const started = asRecord(unwrap(await router.call("emacs_verification", {

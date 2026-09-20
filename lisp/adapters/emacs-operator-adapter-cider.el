@@ -93,11 +93,17 @@
                  (condition (or (emacs-operator-cider--dict-get response "ex")
                                 (emacs-operator-cider--dict-get response "root-ex")
                                 (emacs-operator-cider--failure-status response)))
-                 (stack (emacs-operator-cider--dict-get response "stacktrace")))
+                 (stack (emacs-operator-cider--dict-get response "stacktrace"))
+                 (response-metadata
+                  `(("nrepl_status" . ,(emacs-operator-cider--response-statuses response))
+                    ("nrepl_ns" . ,(emacs-operator-cider--dict-get response "ns"))
+                    ("nrepl_value_present" . ,(if value t :json-false)))))
             (emacs-operator-repl-result
              :stdout out :stderr stderr :value value :condition condition
              :backtrace-handle (and stack (format "cider:%sx" (sxhash-equal stack)))
-             :namespace-or-package namespace :metadata metadata :completed (not condition))))
+             :namespace-or-package namespace
+             :metadata (append metadata response-metadata)
+             :completed (not condition))))
       (error
        (emacs-operator-repl-result
         :stderr (error-message-string err)

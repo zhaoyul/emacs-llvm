@@ -58,5 +58,35 @@
       (should-not (eq (emacs-operator--get result "completed") t))
       (should (equal (emacs-operator--get result "condition") "namespace-not-found")))))
 
+(ert-deftest emacs-operator-cider-result-carries-bounded-nrepl-diagnostics ()
+  "Expose only bounded response metadata needed to diagnose package acceptance."
+  (cl-letf (((symbol-function 'emacs-operator-cider--ready-state)
+             (lambda () '(t . nil)))
+            ((symbol-function 'emacs-operator-cider--namespace)
+             (lambda () "user"))
+            ((symbol-function 'emacs-operator-cider--connection)
+             (lambda () 'fake-connection))
+            ((symbol-function 'emacs-operator-repl-source-metadata)
+             (lambda (&rest _args) '(("operation" . "eval_last_sexp"))))
+            ((symbol-function 'cider-nrepl-sync-request:eval)
+             (lambda (&rest _args)
+               '(dict "status" ("eval-error" "done")
+                      "ns" "user"
+                      "ex" "class clojure.lang.Compiler$CompilerException"
+                      "err" "Syntax error compiling at fixture.clj:1:1."))))
+    (let* ((result
+            (emacs-operator-cider--eval-source
+             "(missing-symbol 41)"
+             '(("operation" . "eval_last_sexp") ("timeout_ms" . 1000))))
+           (metadata (emacs-operator--get result "metadata")))
+      (should (equal (emacs-operator--get result "condition")
+                     "class clojure.lang.Compiler$CompilerException"))
+      (should (equal (emacs-operator--get metadata "nrepl_status")
+                     '("eval-error" "done")))
+      (should (equal (emacs-operator--get metadata "nrepl_ns") "user"))
+      (should-not (eq (emacs-operator--get metadata "nrepl_value_present") t))
+      (should (string-match-p "Syntax error compiling"
+                              (emacs-operator--get result "stderr"))))))
+
 (provide 'emacs-operator-cider-test)
 ;;; emacs-operator-cider-test.el ends here
