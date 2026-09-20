@@ -31,6 +31,17 @@
          ("channel" . "repl"))))
       ("requires_connection" . t)
       ("result_contract" . ("stdout" "stderr" "value" "condition" "backtrace_handle")))))
+(defun emacs-operator-sly--guarded-eval-form (source)
+  "Build a Slynk form that returns canonical values or structured conditions."
+  `(handler-case
+       (list :ok
+             (let ((slynk:*echo-number-alist* nil))
+               (slynk:eval-and-grab-output ,source)))
+     (condition (condition)
+       (list :error
+             (princ-to-string (type-of condition))
+             (princ-to-string condition)))))
+
 (defun emacs-operator-sly--eval-source (source params)
   (let* ((package (emacs-operator-sly--package))
          (ready (emacs-operator-sly--ready-state))
@@ -49,12 +60,29 @@
                :stdout stdout :value value :namespace-or-package package
                :metadata metadata :completed t)))
            ((fboundp 'sly-eval)
-            (let* ((pair (sly-eval `(slynk:eval-and-grab-output ,source) package))
-                   (stdout (if (consp pair) (or (car pair) "") ""))
-                   (value (if (consp pair) (cadr pair) pair)))
-              (emacs-operator-repl-result
-               :stdout stdout :value value :namespace-or-package package
-               :metadata metadata :completed t)))))
+            (let* ((response (sly-eval (emacs-operator-sly--guarded-eval-form source) package))
+                   (status (car-safe response)))
+              (pcase status
+                (:ok
+                 (let* ((pair (cadr response))
+                        (stdout (if (consp pair) (or (car pair) "") ""))
+                        (value (if (consp pair) (cadr pair) pair)))
+                   (emacs-operator-repl-result
+                    :stdout stdout :value value :namespace-or-package package
+                    :metadata metadata :completed t)))
+                (:error
+                 (emacs-operator-repl-result
+                  :stderr (or (nth 2 response) "")
+                  :condition (or (nth 1 response) "condition")
+                  :backtrace-handle (format "sly:%sx" (sxhash-equal response))
+                  :namespace-or-package package :metadata metadata :completed nil))
+                (_
+                 (let* ((pair response)
+                        (stdout (if (consp pair) (or (car pair) "") ""))
+                        (value (if (consp pair) (cadr pair) pair)))
+                   (emacs-operator-repl-result
+                    :stdout stdout :value value :namespace-or-package package
+                    :metadata metadata :completed t))))))))
       (error
        (emacs-operator-repl-result
         :stderr (error-message-string err)
