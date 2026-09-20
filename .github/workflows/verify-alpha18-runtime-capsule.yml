@@ -1,0 +1,42 @@
+name: Verify Alpha18 Runtime Capsule
+
+on:
+  push:
+    branches:
+      - codex/import-alpha16-source-final
+    paths:
+      - ".bootstrap/alpha18-runtime-v2/**"
+      - ".github/workflows/verify-alpha18-runtime-capsule.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reconstruct and verify capsule
+        shell: bash
+        run: |
+          set -euo pipefail
+          capsule_dir=".bootstrap/alpha18-runtime-v2"
+          encoded="$RUNNER_TEMP/alpha18-runtime.patch.xz.b64"
+          archive="$RUNNER_TEMP/alpha18-runtime.patch.xz"
+          patch="$RUNNER_TEMP/alpha18-runtime.patch"
+
+          cat "$capsule_dir"/part-*.txt > "$encoded"
+          test "$(wc -c < "$encoded")" -eq 21120
+
+          base64 --decode "$encoded" > "$archive"
+          echo "9d1b6dc55e004d15bf93deedd60281546955e9a1ccd68d6a7ca97881cff057ce  $archive" | sha256sum --check --strict
+          xz --test "$archive"
+
+          xz -dc "$archive" > "$patch"
+          test "$(wc -c < "$patch")" -eq 69770
+          echo "1b42eb34821ebc2f71b5c8fb29c9a5d145a1249c1f8ad8cd65c6a12cde97329f  $patch" | sha256sum --check --strict
+
+          echo "alpha18_runtime_capsule=PASS"
