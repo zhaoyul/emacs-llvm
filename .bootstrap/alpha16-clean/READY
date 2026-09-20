@@ -1,0 +1,9 @@
+version=0.1.0-alpha.16
+source_files=366
+parts=25
+archive_bytes=299476
+archive_sha256=dcf961659891cc24a05ca8d24a702f70a30aed91767ed6338c13206cd1c65416
+base64_bytes=399304
+base64_sha256=1834d0c7d1fdeb4ec7b68e5d433d91082db2425c00e8748dcdfb057dbff5d3d8
+alpha18_patch_sha256=9e9d704089ecc2cad4ccaf47ed7b646c8fecc0e3c11cb276e09940d5670188ac
+trigger=materialize-alpha16-alpha18-20260920
