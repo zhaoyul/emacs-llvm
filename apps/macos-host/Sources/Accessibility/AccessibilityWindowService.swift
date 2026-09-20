@@ -122,7 +122,9 @@ struct AccessibilityWindowService: Sendable {
         for window in info {
             guard (window[kCGWindowOwnerPID] as? NSNumber)?.int32Value == pid,
                   let rawBounds = window[kCGWindowBounds] else { continue }
-            let dictionary = rawBounds as CFDictionary
+            let boundsObject = rawBounds as AnyObject
+            guard CFGetTypeID(boundsObject) == CFDictionaryGetTypeID() else { continue }
+            let dictionary = unsafeBitCast(boundsObject, to: CFDictionary.self)
             var bounds = CGRect.zero
             if CGRectMakeWithDictionaryRepresentation(dictionary, &bounds) { return bounds }
         }

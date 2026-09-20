@@ -5,6 +5,13 @@ on:
   push:
     branches:
       - codex/import-alpha16-source-final
+    paths:
+      - "lisp/**"
+      - "packages/mcp-server/**"
+      - "scripts/package-runtime/**"
+      - "scripts/runtime/**"
+      - "package.json"
+      - "tsconfig.json"
 
 permissions:
   contents: read
