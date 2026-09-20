@@ -67,5 +67,10 @@
       (should (equal (make-string 64 ?f)
                      (emacs-operator-secure-token-generate-fallback))))))
 
+(ert-deftest emacs-operator-secure-token-hexify-rejects-non-octet-character ()
+  (should-error
+   (emacs-operator-secure-token--hexify (make-string 1 #x100))
+   :type 'error))
+
 (provide 'emacs-operator-secure-token-test)
 ;;; emacs-operator-secure-token-test.el ends here

@@ -22,10 +22,20 @@
   :type 'string)
 
 (defun emacs-operator-secure-token--hexify (bytes)
-  "Return lowercase hexadecimal representation of unibyte string BYTES."
+  "Return lowercase hexadecimal representation of byte string BYTES.
+Each character in BYTES must represent one octet in the range 0..255.
+This intentionally avoids `string-as-unibyte', which re-encodes multibyte
+characters such as U+00FF as UTF-8 bytes instead of preserving their octet
+value."
+  (unless (stringp bytes)
+    (error "E_CSPRNG_BYTES_TYPE: expected a string"))
   (apply #'concat
-         (mapcar (lambda (byte) (format "%02x" byte))
-                 (string-to-list (string-as-unibyte bytes)))))
+         (mapcar
+          (lambda (byte)
+            (unless (<= 0 byte 255)
+              (error "E_CSPRNG_BYTE_RANGE: %d is not an octet" byte))
+            (format "%02x" byte))
+          (string-to-list bytes))))
 
 (defun emacs-operator-secure-token--private-mode-p (modes)
   "Return non-nil when MODES grants no group or other access."
