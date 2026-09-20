@@ -67,6 +67,7 @@ jobs:
           xvfb_pid=""
           previous_pid=""
           target_pid=""
+
           cleanup() {
             set +e
             [[ -n "$target_pid" ]] && kill "$target_pid" 2>/dev/null || true
@@ -93,6 +94,8 @@ jobs:
             [[ -s "$tmp/previous.json" && -s "$tmp/target.json" ]] && break
             sleep 0.02
           done
+          test -s "$tmp/previous.json"
+          test -s "$tmp/target.json"
 
           prev_pid="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["pid"])' "$tmp/previous.json")"
           prev_win="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["window_identifier"])' "$tmp/previous.json")"
@@ -101,35 +104,28 @@ jobs:
 
           DISPLAY="$display" apps/linux-host/build/x11-helper focus             --pid "$prev_pid" --window-id "$prev_win" --timeout-ms 1000 >/dev/null
 
-          python3 - "$tmp/events.tsv" <<'PY'
-import base64, sys
-out = sys.argv[1]
-def b(value):
-    return base64.b64encode(value.encode()).decode()
-rows = [
-    ["key_press", b("a"), b(""), b(""), b(""), "1", "0"],
-    ["key_press", b("x"), b(""), b(""), b("control"), "1", "0"],
-    ["text", b(""), b(""), b("Z你"), b(""), "1", "0"],
-    ["key_press", b("left"), b(""), b(""), b(""), "1", "0"],
-]
-open(out, "w").write("\n".join("\t".join(row) for row in rows) + "\n")
-PY
+          printf '%s\n'             $'key_press\tYQ==\t\t\t\t1\t0'             $'key_press\teA==\t\t\tY29udHJvbA==\t1\t0'             $'text\t\t\tWuS9oA==\t\t1\t0'             $'key_press\tbGVmdA==\t\t\t\t1\t0'             > "$tmp/events.tsv"
 
           DISPLAY="$display" apps/linux-host/build/x11-helper sequence             --pid "$tgt_pid" --window-id "$tgt_win" --events "$tmp/events.tsv"             --timeout-ms 1500 --restore >"$tmp/sequence.json"
 
-          for _ in $(seq 1 100); do
+          for _ in $(seq 1 150); do
             grep -q '"keysym_name":"Left"' "$tmp/target.log" && break
             sleep 0.01
           done
 
+          grep -q '"keysym_name":"a"' "$tmp/target.log"
+          grep -q '"keysym_name":"x"' "$tmp/target.log"
           grep -q '"keysym_name":"Z"' "$tmp/target.log"
           grep -q '"keysym_name":"U4F60"' "$tmp/target.log"
           grep -q '"unicode":20320' "$tmp/target.log"
-          if grep -q '"keycode":248,"keysym_code":0' "$tmp/target.log"; then
+          grep -q '"keysym_name":"Left"' "$tmp/target.log"
+
+          if grep -Eq '"keysym_code":0,.*"unicode":0' "$tmp/target.log"; then
             cat "$tmp/target.log" >&2
-            echo "Unicode scratch key was observed with NoSymbol." >&2
+            echo "A key event was observed with NoSymbol after dynamic mapping." >&2
             exit 1
           fi
+
           echo "x11_unicode_sequence=PASS"
 
       - name: Commit verified source fix
