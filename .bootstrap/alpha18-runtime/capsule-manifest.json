@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0",
+  "capsule": "alpha18-runtime-final.patch.xz",
+  "base_version": "0.1.0-alpha.16",
+  "patch_sha256": "2a90c5b5d2833c47b2fff0b0ecb41245bff8f0b073e433e5fdb9816e62569619",
+  "xz_sha256": "203f42bb24cd77527a38cdf2c411e98e14dcd77c813eb2bf521aa8899ca4fd7d",
+  "patch_bytes": 77282,
+  "xz_bytes": 16188,
+  "encoding": "base64-concatenated-text-parts",
+  "parts": [
+    {
+      "name": "part-000.txt",
+      "bytes": 12000,
+      "sha256": "d2248c829a86c7da76fa80c6a2c89eaee80d3eab616f0e77a6f23083be558d00"
+    },
+    {
+      "name": "part-001.txt",
+      "bytes": 9584,
+      "sha256": "72f919917f17e2ebfcc007d91c9eabbefacedc590915f146c82d0cf2a56e0465"
+    }
+  ],
+  "apply": "cat part-*.txt | base64 --decode | xz -dc | patch -p1 --batch",
+  "validation": {
+    "check_version": "pass",
+    "check_elisp_structure": "pass",
+    "typecheck": "pass",
+    "package_runtime_tests": "31/31 pass",
+    "typescript_tests": "93/93 pass",
+    "agent_experiment_tests": "18/18 pass",
+    "clean_replay_patch_apply": "pass",
+    "clean_replay_package_runtime_tests": "31/31 pass"
+  },
+  "notes": "Real GNU Emacs package-runtime execution remains delegated to GitHub Actions because the local execution container has no GNU Emacs/Clojure/SBCL network runtime."
+}
