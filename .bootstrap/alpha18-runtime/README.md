@@ -29,8 +29,8 @@ xz --decompress --stdout /tmp/alpha18-runtime.patch.xz > /tmp/alpha18-runtime.pa
 printf '%s  %s\n' \
   9e9d704089ecc2cad4ccaf47ed7b646c8fecc0e3c11cb276e09940d5670188ac \
   /tmp/alpha18-runtime.patch | sha256sum --check --strict
-git apply --check /tmp/alpha18-runtime.patch
-git apply /tmp/alpha18-runtime.patch
+patch --batch --dry-run -p5 < /tmp/alpha18-runtime.patch
+patch --batch -p5 < /tmp/alpha18-runtime.patch
 ```
 
 `capsule-manifest.json` contains the changed-file hashes and validation evidence. The capsule must be applied only to the verified Alpha.16 source baseline.
