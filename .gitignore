@@ -3,8 +3,8 @@ dist/
 apps/macos-host/.build/
 .DS_Store
 *.log
-runtime/
+/runtime/
 
 apps/linux-host/build/
-.runtime/
+/.runtime/
 artifacts/
