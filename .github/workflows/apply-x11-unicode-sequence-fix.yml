@@ -1,0 +1,147 @@
+name: Apply X11 Unicode Sequence Fix
+
+on:
+  push:
+    branches:
+      - codex/import-alpha16-source-final
+    paths:
+      - ".bootstrap/fixes/x11-unicode-sequence-mapping-v1.patch.xz.b64"
+      - ".github/workflows/apply-x11-unicode-sequence-fix.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install X11 test prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y build-essential libx11-dev libpng-dev libxtst6 xvfb x11-utils xauth
+
+      - name: Verify and apply patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          encoded=".bootstrap/fixes/x11-unicode-sequence-mapping-v1.patch.xz.b64"
+          archive="$RUNNER_TEMP/x11-unicode-sequence.patch.xz"
+          patch="$RUNNER_TEMP/x11-unicode-sequence.patch"
+
+          base64 --decode "$encoded" > "$archive"
+          echo "76ccdc8688016953773d5a84da7df23771e9070951750023c68a69571df38bd9  $archive" | sha256sum --check --strict
+          xz -dc "$archive" > "$patch"
+          echo "31cdf50ae638758ccf852da987cf9a5c7d6a29d5b1b1712f66d32620dae80968  $patch" | sha256sum --check --strict
+
+          if git apply --check "$patch"; then
+            git apply "$patch"
+          elif git apply --reverse --check "$patch"; then
+            echo "Patch is already applied."
+          else
+            echo "Patch neither applies nor is already present." >&2
+            exit 1
+          fi
+          git diff --check
+
+      - name: Build and run Linux Host tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          make -C apps/linux-host clean all
+          node --test apps/linux-host/test/*.test.mjs
+
+      - name: Reproduce Unicode XTEST sequence under Xvfb
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          display=":198"
+          xvfb_pid=""
+          previous_pid=""
+          target_pid=""
+          cleanup() {
+            set +e
+            [[ -n "$target_pid" ]] && kill "$target_pid" 2>/dev/null || true
+            [[ -n "$previous_pid" ]] && kill "$previous_pid" 2>/dev/null || true
+            [[ -n "$xvfb_pid" ]] && kill "$xvfb_pid" 2>/dev/null || true
+            rm -rf "$tmp"
+          }
+          trap cleanup EXIT
+
+          Xvfb "$display" -screen 0 1280x800x24 -nolisten tcp >"$tmp/xvfb.log" 2>&1 &
+          xvfb_pid=$!
+          for _ in $(seq 1 100); do
+            DISPLAY="$display" xdpyinfo >/dev/null 2>&1 && break
+            sleep 0.05
+          done
+          DISPLAY="$display" xdpyinfo >/dev/null
+
+          DISPLAY="$display" apps/linux-host/build/x11-probe             --title "Unicode Previous" --log "$tmp/previous.log" --ready "$tmp/previous.json"             >"$tmp/previous-probe.log" 2>&1 &
+          previous_pid=$!
+          DISPLAY="$display" apps/linux-host/build/x11-probe             --title "Unicode Target" --log "$tmp/target.log" --ready "$tmp/target.json"             >"$tmp/target-probe.log" 2>&1 &
+          target_pid=$!
+
+          for _ in $(seq 1 100); do
+            [[ -s "$tmp/previous.json" && -s "$tmp/target.json" ]] && break
+            sleep 0.02
+          done
+
+          prev_pid="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["pid"])' "$tmp/previous.json")"
+          prev_win="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["window_identifier"])' "$tmp/previous.json")"
+          tgt_pid="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["pid"])' "$tmp/target.json")"
+          tgt_win="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["window_identifier"])' "$tmp/target.json")"
+
+          DISPLAY="$display" apps/linux-host/build/x11-helper focus             --pid "$prev_pid" --window-id "$prev_win" --timeout-ms 1000 >/dev/null
+
+          python3 - "$tmp/events.tsv" <<'PY'
+import base64, sys
+out = sys.argv[1]
+def b(value):
+    return base64.b64encode(value.encode()).decode()
+rows = [
+    ["key_press", b("a"), b(""), b(""), b(""), "1", "0"],
+    ["key_press", b("x"), b(""), b(""), b("control"), "1", "0"],
+    ["text", b(""), b(""), b("Z你"), b(""), "1", "0"],
+    ["key_press", b("left"), b(""), b(""), b(""), "1", "0"],
+]
+open(out, "w").write("\n".join("\t".join(row) for row in rows) + "\n")
+PY
+
+          DISPLAY="$display" apps/linux-host/build/x11-helper sequence             --pid "$tgt_pid" --window-id "$tgt_win" --events "$tmp/events.tsv"             --timeout-ms 1500 --restore >"$tmp/sequence.json"
+
+          for _ in $(seq 1 100); do
+            grep -q '"keysym_name":"Left"' "$tmp/target.log" && break
+            sleep 0.01
+          done
+
+          grep -q '"keysym_name":"Z"' "$tmp/target.log"
+          grep -q '"keysym_name":"U4F60"' "$tmp/target.log"
+          grep -q '"unicode":20320' "$tmp/target.log"
+          if grep -q '"keycode":248,"keysym_code":0' "$tmp/target.log"; then
+            cat "$tmp/target.log" >&2
+            echo "Unicode scratch key was observed with NoSymbol." >&2
+            exit 1
+          fi
+          echo "x11_unicode_sequence=PASS"
+
+      - name: Commit verified source fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- apps/linux-host/native/x11_helper.c; then
+            echo "No source change to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/linux-host/native/x11_helper.c
+          git commit -m "fix: retain X11 Unicode mappings through native sequence"
+          git push origin HEAD:codex/import-alpha16-source-final
