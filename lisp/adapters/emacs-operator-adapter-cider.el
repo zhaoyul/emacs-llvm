@@ -48,7 +48,7 @@
     (unless (car ready) (emacs-operator-signal "E_COMMAND_FAILED" (cdr ready)))
     (condition-case err
         (with-timeout (timeout (emacs-operator-repl-timeout-result "CIDER" namespace metadata))
-          (let* ((response (cider-nrepl-sync-request:eval source namespace connection))
+          (let* ((response (cider-nrepl-sync-request:eval source connection namespace))
                  (value (emacs-operator-cider--dict-get response "value"))
                  (out (emacs-operator-cider--dict-get response "out"))
                  (stderr (emacs-operator-cider--dict-get response "err"))
