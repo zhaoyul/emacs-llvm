@@ -32,6 +32,13 @@
                              ("max_bytes" . ,emacs-operator-repl-max-source-bytes))))
   source)
 
+(defun emacs-operator-repl--top-level-form-start-p ()
+  "Return non-nil when point is exactly at a top-level opening delimiter."
+  (let ((state (syntax-ppss)))
+    (and (= (car state) 0)
+         (not (nth 8 state))
+         (looking-at-p "\\s("))))
+
 (defun emacs-operator-repl-source-bounds (operation)
   "Return the buffer bounds for structured evaluation OPERATION.
 The returned vector is derived from the current target buffer and is used both
@@ -51,8 +58,11 @@ for evaluation and for verification-ticket target identity."
      (save-excursion
        (condition-case err
            (let (start end)
-             (beginning-of-defun)
-             (setq start (point))
+             (if (emacs-operator-repl--top-level-form-start-p)
+                 (setq start (point))
+               (beginning-of-defun)
+               (setq start (point)))
+             (goto-char start)
              (end-of-defun)
              (setq end (point))
              (unless (< start end)

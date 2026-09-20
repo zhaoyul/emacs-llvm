@@ -278,6 +278,18 @@
     (search-forward "+")
     (should (string-match-p "defun emacs-operator-test-repl" (emacs-operator-repl-current-defun-source)))))
 
+(ert-deftest emacs-operator-phase5-repl-defun-source-keeps-current-form-at-start ()
+  "Do not jump to the previous top-level form when point is already at a defun start."
+  (with-temp-buffer
+    (emacs-lisp-mode)
+    (insert "(defun emacs-operator-test-previous ()\n  :previous)\n\n")
+    (let ((target-start (point)))
+      (insert "(defun emacs-operator-test-current ()\n  :current)\n")
+      (goto-char target-start)
+      (let ((source (emacs-operator-repl-current-defun-source)))
+        (should (string-match-p "emacs-operator-test-current" source))
+        (should-not (string-match-p "emacs-operator-test-previous" source))))))
+
 (ert-deftest emacs-operator-phase5-repl-timeout-is-bounded ()
   (should (= (emacs-operator-repl-timeout-seconds '(("timeout_ms" . 999999))) 30.0))
   (should-error (emacs-operator-repl-timeout-seconds '(("timeout_ms" . 0))) :type 'emacs-operator-error))
