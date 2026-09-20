@@ -32,6 +32,13 @@ jobs:
             command -v "$tool" >/dev/null
           done
 
+      - name: Preserve repository workflow definitions
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/repo-workflows"
+          cp -a .github/workflows/. "$RUNNER_TEMP/repo-workflows/"
+
       - name: Reconstruct verified Alpha.16 clean source
         shell: bash
         run: |
@@ -164,6 +171,10 @@ jobs:
               else:
                   shutil.copy2(item, target)
           PY
+
+          rm -rf .github/workflows
+          mkdir -p .github/workflows
+          cp -a "$RUNNER_TEMP/repo-workflows/." .github/workflows/
 
       - name: Commit materialized source
         shell: bash
