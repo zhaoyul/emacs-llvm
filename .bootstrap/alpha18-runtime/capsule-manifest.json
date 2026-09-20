@@ -1,0 +1,240 @@
+{
+  "schema_version": "1.0",
+  "target": "zhaoyul/emacs-llvm",
+  "base_version": "0.1.0-alpha.16",
+  "target_track": "alpha.18-runtime",
+  "changed_files": [
+    {
+      "path": ".github/workflows/linux-package-runtime-experimental.yml",
+      "status": "added",
+      "before": null,
+      "after": {
+        "bytes": 5110,
+        "sha256": "de00413c0d13d08e635f60295da4346d981519bfa1e2d30e450644f710429e45"
+      }
+    },
+    {
+      "path": "lisp/emacs-operator-keys.el",
+      "status": "modified",
+      "before": {
+        "bytes": 22049,
+        "sha256": "fb7ce1335b3d68fdab54ea65d1cdbf36162451bb2484da3e564d8a35e5d40584"
+      },
+      "after": {
+        "bytes": 22849,
+        "sha256": "c1272d0b71cec773e597731dfba9d319f8e160d9bf7903d5236a52d3ef3c703b"
+      }
+    },
+    {
+      "path": "lisp/test/emacs-operator-test.el",
+      "status": "modified",
+      "before": {
+        "bytes": 37940,
+        "sha256": "adb465bd38a5d87b6e49373d9cfdcafeae7018db55a546b9565e7c5405aed1f2"
+      },
+      "after": {
+        "bytes": 39170,
+        "sha256": "17b5018d6947496177b4c7db1b9ef6ad9bde53c202f485d74e81d374723845f8"
+      }
+    },
+    {
+      "path": "package.json",
+      "status": "modified",
+      "before": {
+        "bytes": 5576,
+        "sha256": "bdd48abfbb143ba6b30a9cd3cd1ad11768315f870978bfcd5dae1f52a01e35df"
+      },
+      "after": {
+        "bytes": 6236,
+        "sha256": "2f3d505a980b6e8494e14c929141f7c7eaeb27b67f4be839ef93ed2d811c93f6"
+      }
+    },
+    {
+      "path": "packages/mcp-server/src/linuxPackageAcceptance.ts",
+      "status": "modified",
+      "before": {
+        "bytes": 17241,
+        "sha256": "19ebe8e9f7d35983bd35dfb8213c1508df018e4c991e06752deec13363f99919"
+      },
+      "after": {
+        "bytes": 25597,
+        "sha256": "9a393dc5694c0bc7f5e9b88fadd8e2dc71954055e5302e122fdf87b7650968b6"
+      }
+    },
+    {
+      "path": "scripts/package-runtime/acquire-git-source.mjs",
+      "status": "modified",
+      "before": {
+        "bytes": 5309,
+        "sha256": "173cefc46e837a2bc36a1ff9f24de445aa75f6f1517a3014c77618d384c69a2f"
+      },
+      "after": {
+        "bytes": 7339,
+        "sha256": "4664f0722d7f2db518615a4a03a70df46a1d14cb6dcf629b7d05846a2c89eb4d"
+      }
+    },
+    {
+      "path": "scripts/package-runtime/acquire-git-source.test.mjs",
+      "status": "modified",
+      "before": {
+        "bytes": 3354,
+        "sha256": "0a2ca544b65a4dba4c71947391708be40fd4bf9a5a1e4fae14fc765e38711ba4"
+      },
+      "after": {
+        "bytes": 5109,
+        "sha256": "d30de8260931cd5e4b6ea94fa44ad7ce8dfd3027d20ba5cea1c188e3c524ab31"
+      }
+    },
+    {
+      "path": "scripts/package-runtime/acquire-package-runtime-sources.mjs",
+      "status": "added",
+      "before": null,
+      "after": {
+        "bytes": 1676,
+        "sha256": "705de6e7907580ebb2ceeafd593987737d1f2476485d1a610049b14411039589"
+      }
+    },
+    {
+      "path": "scripts/package-runtime/cider-jvm-runtime.test.mjs",
+      "status": "added",
+      "before": null,
+      "after": {
+        "bytes": 4275,
+        "sha256": "0f9181fa8952cdf3c02a1876e3c6aa4f428d1c97b926b2fcb0f4d617205bc766"
+      }
+    },
+    {
+      "path": "scripts/package-runtime/prepare-cider-jvm-runtime.mjs",
+      "status": "added",
+      "before": null,
+      "after": {
+        "bytes": 5881,
+        "sha256": "390666e724e5947b12bfed5c8d08e41114cabe8ecf8b807551cfe4107bae5fcf"
+      }
+    },
+    {
+      "path": "scripts/package-runtime/prepare-package-runtime.mjs",
+      "status": "added",
+      "before": null,
+      "after": {
+        "bytes": 8595,
+        "sha256": "71fcfd7cc33a8c63d5e0c63d2002d6cca30ba28252fe0f2c4b9c5ca87ceda7d6"
+      }
+    },
+    {
+      "path": "scripts/package-runtime/prepare-package-runtime.test.mjs",
+      "status": "added",
+      "before": null,
+      "after": {
+        "bytes": 6058,
+        "sha256": "3c51362a3ecc1c12d82e803a6458ac8a54300131cabbcb01ae787c48d814ae6f"
+      }
+    },
+    {
+      "path": "scripts/package-runtime/sources.lock.json",
+      "status": "modified",
+      "before": {
+        "bytes": 1261,
+        "sha256": "27b484849e0422004bf2cec4cd3827e0f5ccf277c38672be217f9f7826659c9c"
+      },
+      "after": {
+        "bytes": 3476,
+        "sha256": "a4ef957c43d27ea0acd8678cb6a322b7c0783ea1031f074a593db0b165d6d071"
+      }
+    },
+    {
+      "path": "scripts/package-runtime/start-cider-nrepl.mjs",
+      "status": "added",
+      "before": null,
+      "after": {
+        "bytes": 3570,
+        "sha256": "5f013981984f64d19de1d39a58e7bf92c4c822a9245fc77f36bfba92cab5720f"
+      }
+    },
+    {
+      "path": "scripts/package-runtime/start-slynk.mjs",
+      "status": "added",
+      "before": null,
+      "after": {
+        "bytes": 4598,
+        "sha256": "6d0259570e681314b803f75ef445a5dc7d0e0386998c936bed35afc11208ff5b"
+      }
+    },
+    {
+      "path": "scripts/runtime/provision-sbcl-runtime.mjs",
+      "status": "added",
+      "before": null,
+      "after": {
+        "bytes": 7484,
+        "sha256": "75cda3896ce3671d442d04d0e221a74022b9edf011b6d284723269ec2c8650f3"
+      }
+    },
+    {
+      "path": "scripts/runtime/sbcl-slynk-runtime.test.mjs",
+      "status": "added",
+      "before": null,
+      "after": {
+        "bytes": 7352,
+        "sha256": "ec676f7b7a699b7c1520514ca3dfd7e834f7342cf9879c9a9c234688602a860f"
+      }
+    }
+  ],
+  "patch": {
+    "name": "emacs-operator-alpha18-runtime.patch",
+    "bytes": 89928,
+    "sha256": "9e9d704089ecc2cad4ccaf47ed7b646c8fecc0e3c11cb276e09940d5670188ac"
+  },
+  "validation": {
+    "check_version": "PASS",
+    "typecheck": "PASS",
+    "elisp_structure": "PASS (18 files)",
+    "package_runtime_tests": "PASS 34/34",
+    "typescript_tests": "PASS 93/93",
+    "real_emacs_runtime": "NOT_RUN in local container; delegated to GitHub Actions"
+  },
+  "compressed_patch": {
+    "name": "emacs-operator-alpha18-runtime.patch.xz",
+    "bytes": 17224,
+    "sha256": "d1aa97c69c90fe6974d155f53540ea9736be1ac7ff6011c18b557d4e21f7de54",
+    "encoding": "xz"
+  },
+  "transport": {
+    "name": "emacs-operator-alpha18-runtime.patch.xz.b64",
+    "bytes": 22968,
+    "sha256": "f82c23b4ba9f0f0e72696f1b7688bf7e19d34fe72341df934a17681f5ff544dc",
+    "encoding": "base64(xz(patch))",
+    "parts": [
+      {
+        "path": ".bootstrap/alpha18-runtime/part-000.txt",
+        "bytes": 6000,
+        "sha256": "c6b53a089b636caabd0de744587145a752b1459a347a043e86c57a4bb8627565",
+        "git_blob_sha1": "751d847dcd9b63676232d76dbb65b0d670ff1895"
+      },
+      {
+        "path": ".bootstrap/alpha18-runtime/part-001.txt",
+        "bytes": 6000,
+        "sha256": "72e5bfa15a7e9df5f3d2e90a7303979acdb7ba0940370af12bdf51562dbeda3b",
+        "git_blob_sha1": "61d6209591f211cee4f91dd670345aaa4b50e24a"
+      },
+      {
+        "path": ".bootstrap/alpha18-runtime/part-002.txt",
+        "bytes": 6000,
+        "sha256": "1802a8cb57374c5083deade63b8980c4b66a2a8544c1bec94dc567555ad1478d",
+        "git_blob_sha1": "293787d0f4d96a7fafda6be6002d3c8c146891f1"
+      },
+      {
+        "path": ".bootstrap/alpha18-runtime/part-003.txt",
+        "bytes": 4968,
+        "sha256": "90f847966310670f3137cde73e7ab32be68398a0809d66deb2c03802402bc8a0",
+        "git_blob_sha1": "fdf11987958f8d2358df54c734d42c76eb6d6595"
+      }
+    ],
+    "reconstruction": {
+      "algorithm": "concatenate parts in lexical order -> base64 decode -> xz decompress",
+      "decoded_xz_bytes": 17224,
+      "decoded_xz_sha256": "d1aa97c69c90fe6974d155f53540ea9736be1ac7ff6011c18b557d4e21f7de54",
+      "patch_bytes": 89928,
+      "patch_sha256": "9e9d704089ecc2cad4ccaf47ed7b646c8fecc0e3c11cb276e09940d5670188ac"
+    }
+  }
+}
