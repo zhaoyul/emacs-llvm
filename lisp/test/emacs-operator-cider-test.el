@@ -37,5 +37,26 @@
     (should (equal (emacs-operator-cider--dict-get response "status") '("done")))
     (should-not (emacs-operator-cider--dict-get response "missing"))))
 
+(ert-deftest emacs-operator-cider-nrepl-error-status-is-structured-failure ()
+  "Treat nREPL status failures as conditions even when no ex field is present."
+  (cl-letf (((symbol-function 'emacs-operator-cider--ready-state)
+             (lambda () '(t . nil)))
+            ((symbol-function 'emacs-operator-cider--namespace)
+             (lambda () "missing.ns"))
+            ((symbol-function 'emacs-operator-cider--connection)
+             (lambda () 'fake-connection))
+            ((symbol-function 'emacs-operator-repl-source-metadata)
+             (lambda (&rest _args) '(("operation" . "eval_defun"))))
+            ((symbol-function 'cider-nrepl-sync-request:eval)
+             (lambda (&rest _args)
+               '(dict "status" ("error" "namespace-not-found" "done")
+                      "ns" "missing.ns"))))
+    (let ((result
+           (emacs-operator-cider--eval-source
+            "(defn demo [x] (+ x 1))"
+            '(("operation" . "eval_defun") ("timeout_ms" . 1000)))))
+      (should-not (eq (emacs-operator--get result "completed") t))
+      (should (equal (emacs-operator--get result "condition") "namespace-not-found")))))
+
 (provide 'emacs-operator-cider-test)
 ;;; emacs-operator-cider-test.el ends here

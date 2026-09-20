@@ -49,9 +49,11 @@
                :stdout stdout :value value :namespace-or-package package
                :metadata metadata :completed t)))
            ((fboundp 'sly-eval)
-            (let ((value (sly-eval `(slynk:eval-and-grab-output ,source) package)))
+            (let* ((pair (sly-eval `(slynk:eval-and-grab-output ,source) package))
+                   (stdout (if (consp pair) (or (car pair) "") ""))
+                   (value (if (consp pair) (cadr pair) pair)))
               (emacs-operator-repl-result
-               :value (format "%s" value) :namespace-or-package package
+               :stdout stdout :value value :namespace-or-package package
                :metadata metadata :completed t)))))
       (error
        (emacs-operator-repl-result

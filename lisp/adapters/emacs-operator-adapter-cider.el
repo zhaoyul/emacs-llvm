@@ -57,6 +57,25 @@
    ((listp response)
     (or (cdr (assoc key response))
         (cdr (assq (intern key) response))))))
+(defun emacs-operator-cider--response-statuses (response)
+  "Return RESPONSE status values as a list."
+  (let ((status (emacs-operator-cider--dict-get response "status")))
+    (cond
+     ((null status) nil)
+     ((vectorp status) (append status nil))
+     ((listp status) status)
+     (t (list status)))))
+
+(defun emacs-operator-cider--failure-status (response)
+  "Return the most specific nREPL failure status from RESPONSE, or nil."
+  (let ((statuses (emacs-operator-cider--response-statuses response))
+        failure)
+    (dolist (candidate '("namespace-not-found" "eval-error" "unknown-session"
+                         "unknown-op" "unknown-code-type" "interrupted" "error"))
+      (when (and (null failure) (member candidate statuses))
+        (setq failure candidate)))
+    failure))
+
 (defun emacs-operator-cider--eval-source (source params)
   (let* ((ready (emacs-operator-cider--ready-state))
          (namespace (emacs-operator-cider--namespace))
@@ -72,7 +91,8 @@
                  (out (emacs-operator-cider--dict-get response "out"))
                  (stderr (emacs-operator-cider--dict-get response "err"))
                  (condition (or (emacs-operator-cider--dict-get response "ex")
-                                (emacs-operator-cider--dict-get response "root-ex")))
+                                (emacs-operator-cider--dict-get response "root-ex")
+                                (emacs-operator-cider--failure-status response)))
                  (stack (emacs-operator-cider--dict-get response "stacktrace")))
             (emacs-operator-repl-result
              :stdout out :stderr stderr :value value :condition condition

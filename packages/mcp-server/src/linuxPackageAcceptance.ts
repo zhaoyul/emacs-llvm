@@ -309,9 +309,8 @@ async function main(): Promise<void> {
       // later run pass accidentally or trigger a false name-collision failure.
       const nonce = crypto.randomBytes(4).toString("hex");
       const fnName = `emacs-operator-alpha16-add-${nonce}`;
-      const clojureNs = `emacs-operator.alpha16-${nonce}`;
       const source = pkg === "cider"
-        ? [`(ns ${clojureNs})`, `(defn ${fnName} [x] (+ x 1))`, `(${fnName} 41)`, `(/ 1 0)`, ""].join("\n")
+        ? ["(ns user)", `(defn ${fnName} [x] (+ x 1))`, `(${fnName} 41)`, `(/ 1 0)`, ""].join("\n")
         : [`(in-package #:cl-user)`, `(defun ${fnName} (x) (+ x 1))`, `(${fnName} 41)`, `(/ 1 0)`, ""].join("\n");
       const file = path.join(workspace, `${pkg}${ext}`);
       fs.writeFileSync(file, source);
