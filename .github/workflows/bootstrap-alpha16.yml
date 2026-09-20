@@ -172,6 +172,15 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git diff --cached --check
+          mapfile -t alpha18_paths < <(CAPSULE="$RUNNER_TEMP/capsule-manifest.json" python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          manifest = json.loads(Path(os.environ["CAPSULE"]).read_text())
+          for entry in manifest["changed_files"]:
+              print(entry["path"])
+          PY
+          )
+          git diff --cached --check -- "${alpha18_paths[@]}"
           git commit -m "feat: materialize alpha16 source with alpha18 runtime"
           git push origin HEAD:codex/import-alpha16-source-final
