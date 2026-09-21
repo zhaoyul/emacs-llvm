@@ -2,4 +2,4 @@ version=0.1.0-alpha.16
 archive_sha256=e81474e3bcc18567adbced268d43f9ea033fb03da4a72b622da9d6419534726f
 base64_bytes=409144
 source_files=366
-trigger=canonical-runtime-sync-20260922-r2
+trigger=canonical-runtime-sync-20260922-r3
