@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "emacs-operator": {
+      "command": "node",
+      "args": ["/ABSOLUTE/PATH/emacs-operator/dist/packages/mcp-server/src/server.js"],
+      "env": {
+        "EMACS_OPERATOR_RUNTIME_DIR": "/ABSOLUTE/PATH/runtime/emacs",
+        "EMACS_OPERATOR_DRIVER_RUNTIME_DIR": "/ABSOLUTE/PATH/runtime/native-driver",
+        "EMACS_OPERATOR_CAPTURE_DIR": "/ABSOLUTE/PATH/runtime/captures"
+      }
+    }
+  }
+}

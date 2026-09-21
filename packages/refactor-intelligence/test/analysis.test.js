@@ -1,0 +1,7 @@
+import test from "node:test"; import assert from "node:assert/strict";
+import {inferExtractParameters} from "../src/index.js";
+test("infers outer arguments in source order",()=>{const source='(defun f (x y)\n  (+ x (* y 2)))';const start=source.indexOf('(+');const end=source.indexOf(')',source.indexOf('2'))+2;const r=inferExtractParameters({source,selectionStart:start,selectionEnd:end});assert.deepEqual(r.parameters,["x","y"]);});
+test("does not promote locally bound variables",()=>{const source='(defun f (x) (let ((y 2)) (+ x y)))';const start=source.indexOf('(let');const end=source.lastIndexOf(')');const r=inferExtractParameters({source,selectionStart:start,selectionEnd:end});assert.deepEqual(r.parameters,["x"]);assert.ok(!r.parameters.includes("y"));});
+test("reports unknown value symbols conservatively",()=>{const source='(defun f (x) (+ x mystery))';const start=source.indexOf('(+');const end=source.lastIndexOf(')');const r=inferExtractParameters({source,selectionStart:start,selectionEnd:end});assert.deepEqual(r.parameters,["x"]);assert.ok(r.unresolved.includes("mystery"));});
+
+test("infers bindings from an enclosing nested let body",()=>{const source='(defun f (x) (let ((y 2)) (+ x y mystery)))';const start=source.indexOf('(+');const end=source.lastIndexOf(')')-1;const r=inferExtractParameters({source,selectionStart:start,selectionEnd:end});assert.deepEqual(r.parameters,["x","y"]);assert.ok(r.unresolved.includes("mystery"));});

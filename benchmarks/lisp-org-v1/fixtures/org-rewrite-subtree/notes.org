@@ -1,0 +1,14 @@
+#+title: Rewrite Fixture
+
+* Parent
+:PROPERTIES:
+:OWNER: Old Owner
+:END:
+
+Old body that must be replaced.
+
+** Child
+Keep this child text exactly.
+
+* Unrelated
+Keep this unrelated subtree exactly.

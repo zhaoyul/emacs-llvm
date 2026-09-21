@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://redcreation.example/schemas/emacs-operator-agent-driver-v1.json",
+  "title": "Emacs Operator Agent Driver Protocol v1 Request",
+  "type": "object",
+  "required": ["protocol_version","request_id","run_id","suite_id","suite_revision","suite_digest","task_id","task_digest","trial","trial_seed","prompt","workspace","timeout_ms","trace_path","tool_grant"],
+  "properties": {
+    "protocol_version": {"const": "emacs-operator.agent-driver/1"},
+    "request_id": {"type":"string","minLength":1},
+    "run_id": {"type":"string","minLength":1},
+    "trial": {"type":"integer","minimum":1},
+    "trial_seed": {"type":"integer","minimum":0,"maximum":4294967295},
+    "workspace": {"type":"string","minLength":1},
+    "timeout_ms": {"type":"integer","minimum":1000,"maximum":3600000},
+    "tool_grant": {"oneOf":[
+      {"type":"object","required":["kind","emacs_operator"],"properties":{"kind":{"const":"filesystem_baseline"},"emacs_operator":{"const":false}}},
+      {"type":"object","required":["kind","emacs_operator","mcp_config_path"],"properties":{"kind":{"const":"emacs_operator_candidate"},"emacs_operator":{"const":true},"mcp_config_path":{"type":"string","minLength":1}}}
+    ]}
+  },
+  "additionalProperties": true
+}

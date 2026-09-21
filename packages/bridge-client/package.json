@@ -1,0 +1,6 @@
+{
+  "name": "@emacs-operator/bridge-client",
+  "version": "0.1.0-alpha.16",
+  "private": true,
+  "type": "module"
+}

@@ -1,0 +1,1 @@
+Protected benchmark fixture. Do not modify.

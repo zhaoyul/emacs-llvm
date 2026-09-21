@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://redcreation.cn/emacs-operator/project-rename-plan.schema.json",
+  "title": "Emacs Operator language-aware project rename plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "kind",
+    "root",
+    "language",
+    "qualification_policy",
+    "old_symbol",
+    "requested_new_symbol",
+    "new_symbol",
+    "symbol_semantics",
+    "files",
+    "total_edits",
+    "plan_id",
+    "created_at",
+    "expires_at"
+  ],
+  "properties": {
+    "version": {
+      "const": 2
+    },
+    "kind": {
+      "const": "lisp_project_rename"
+    },
+    "root": {
+      "type": "string",
+      "minLength": 1
+    },
+    "language": {
+      "enum": [
+        "generic",
+        "elisp",
+        "clojure",
+        "common_lisp"
+      ]
+    },
+    "qualification_policy": {
+      "enum": [
+        "exact",
+        "preserve_qualification",
+        "leaf_only"
+      ]
+    },
+    "old_symbol": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "requested_new_symbol": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "new_symbol": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "symbol_semantics": {
+      "type": "object"
+    },
+    "total_edits": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000
+    },
+    "plan_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "created_at": {
+      "type": "number"
+    },
+    "expires_at": {
+      "type": "number"
+    },
+    "files": {
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "absolute_path",
+          "sha256",
+          "buffer_tick",
+          "bytes",
+          "edits"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "absolute_path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "buffer_tick": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "edits": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "start",
+                "end",
+                "line",
+                "column",
+                "old_text",
+                "new_text"
+              ],
+              "properties": {
+                "start": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "end": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "column": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "old_text": {
+                  "type": "string"
+                },
+                "new_text": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

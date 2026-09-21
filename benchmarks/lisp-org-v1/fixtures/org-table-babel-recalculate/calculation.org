@@ -1,0 +1,19 @@
+#+title: Table Calculation
+
+* Values
+The note below must remain unchanged.
+
+#+name: values
+| 40 |
+|  1 |
+
+* Result
+#+begin_src emacs-lisp :var table=values :results value
+(apply #'+ (mapcar #'car table))
+#+end_src
+
+#+RESULTS:
+: 41
+
+* Notes
+Preserve this note exactly.
