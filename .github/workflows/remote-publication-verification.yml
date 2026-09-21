@@ -19,7 +19,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: npm
       - name: Verify canonical source import
         shell: bash
         run: |
@@ -33,7 +32,8 @@ jobs:
           test ! -e .bootstrap
           tracked="$(git ls-files | wc -l)"
           test "$tracked" -ge 300
-      - run: npm ci
+      - name: Install locked TypeScript toolchain
+        run: npm install --no-save --package-lock=false --ignore-scripts typescript@5.9.2
       - run: npm run check:repository-import
       - run: npm run check:version
       - run: npm run typecheck
