@@ -1,4 +1,4 @@
 version=0.1.0-alpha.16
 source_files=366
 archive_sha256=1f90d7580146172550afbafc8d8b91e3456bff6b0a26175588cc0b14fb542496
-trigger=runtime-sync-20260921
+trigger=runtime-sync-materialize-20260921
