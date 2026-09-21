@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "name": "alpha18-locked-package-runtime-v3",
+  "base_version": "0.1.0-alpha.16",
+  "base_release_zip_sha256": "5cba2930d861891dc880a24f56ba0be34bdb0c6928cd9227302f223ba6683bab",
+  "patch_sha256": "7b96d5cf9ca4ad2703573318f1c0690aac21401f226381ed7876bf963af8377a",
+  "compressed_sha256": "db608ccad7127ce7a20e2acece5a62a3fd8afcb8c84d987dc202b84a0aeba4cf",
+  "patch_bytes": 80672,
+  "compressed_bytes": 16780,
+  "base64_bytes": 22376,
+  "validation": {
+    "package_runtime_tests": "34/34 PASS",
+    "typescript_tests": "93/93 PASS",
+    "typecheck": "PASS",
+    "version": "PASS",
+    "elisp_structure": "PASS",
+    "workflow_yaml": "PASS",
+    "bash_syntax": "PASS",
+    "clean_replay_patch_apply": "PASS",
+    "clean_replay_package_runtime_tests": "34/34 PASS",
+    "local_npm_ci": "NOT_RUN: offline container lacks TypeScript tarball cache",
+    "lockfile_metadata": "PASS"
+  },
+  "typescript": {
+    "version": "5.8.3",
+    "integrity": "sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ=="
+  },
+  "encoding": "base64-concatenated-text-parts",
+  "parts": [
+    {
+      "name": "part-000.txt",
+      "bytes": 8000,
+      "sha256": "66cf81172fc7ae6e05519098f80e3aa4a897292bad092a317f1e4fdfab15c9af"
+    },
+    {
+      "name": "part-001.txt",
+      "bytes": 8000,
+      "sha256": "e9ece45459e310a953ee003541035423eecf3b9779961025bbcb6297ea8c31e2"
+    },
+    {
+      "name": "part-002.txt",
+      "bytes": 6376,
+      "sha256": "5c083a78f7b92f5b934ba560d5f65c8aa72ea4f84cd45d81e1cee8c94f393dfb"
+    }
+  ]
+}
