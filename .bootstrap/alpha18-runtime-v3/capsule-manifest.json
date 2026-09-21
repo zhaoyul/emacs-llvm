@@ -19,7 +19,8 @@
     "clean_replay_patch_apply": "PASS",
     "clean_replay_package_runtime_tests": "34/34 PASS",
     "local_npm_ci": "NOT_RUN: offline container lacks TypeScript tarball cache",
-    "lockfile_metadata": "PASS"
+    "lockfile_metadata": "PASS",
+    "publication_exact_git_blob_check": "PASS"
   },
   "typescript": {
     "version": "5.8.3",
@@ -28,19 +29,38 @@
   "encoding": "base64-concatenated-text-parts",
   "parts": [
     {
-      "name": "part-000.txt",
-      "bytes": 8000,
-      "sha256": "66cf81172fc7ae6e05519098f80e3aa4a897292bad092a317f1e4fdfab15c9af"
+      "name": "part-000a.txt",
+      "bytes": 4000,
+      "sha256": "564ccb5092848d5a92aad6b78b2fed581acc4badcf34f79491982bcd327edc9b",
+      "git_blob_sha": "069bbe15ce91dfff70573d7b3d873daca00c6997"
+    },
+    {
+      "name": "part-000b.txt",
+      "bytes": 4000,
+      "sha256": "7f8be6b7a25b2bb8357be2228b72a3ada3e745c6edb3e7b89c0ab635d63bd229",
+      "git_blob_sha": "850a712ab755a86e62b23e35a0d041095e16ef7e"
     },
     {
       "name": "part-001.txt",
       "bytes": 8000,
-      "sha256": "e9ece45459e310a953ee003541035423eecf3b9779961025bbcb6297ea8c31e2"
+      "sha256": "e9ece45459e310a953ee003541035423eecf3b9779961025bbcb6297ea8c31e2",
+      "git_blob_sha": "1c1f058fcf6bef46920ef8bfdcd4e5992f7b39eb"
     },
     {
       "name": "part-002.txt",
       "bytes": 6376,
-      "sha256": "5c083a78f7b92f5b934ba560d5f65c8aa72ea4f84cd45d81e1cee8c94f393dfb"
+      "sha256": "5c083a78f7b92f5b934ba560d5f65c8aa72ea4f84cd45d81e1cee8c94f393dfb",
+      "git_blob_sha": "1eb768d36638c9c9776cc79cbdb4bd2b7796ec7c"
     }
-  ]
+  ],
+  "publication": {
+    "branch": "codex/import-alpha16-source-final",
+    "reconstruction_order": [
+      "part-000a.txt",
+      "part-000b.txt",
+      "part-001.txt",
+      "part-002.txt"
+    ],
+    "exact_total_base64_bytes": 22376
+  }
 }
