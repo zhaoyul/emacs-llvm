@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://emacs-operator.local/schema/instance-record.json",
+  "type": "object",
+  "required": ["protocol_version", "instance_id", "pid", "host", "port", "token_file", "emacs_version", "system_type", "window_system", "started_at", "heartbeat_at"],
+  "properties": {
+    "protocol_version": {"type": "string"},
+    "instance_id": {"type": "string", "minLength": 1},
+    "pid": {"type": "integer", "minimum": 1},
+    "host": {"const": "127.0.0.1"},
+    "port": {"type": "integer", "minimum": 1, "maximum": 65535},
+    "token_file": {"type": "string", "minLength": 1},
+    "emacs_version": {"type": "string"},
+    "system_type": {"type": "string"},
+    "window_system": {"type": ["string", "null"]},
+    "started_at": {"type": "string"},
+    "heartbeat_at": {"type": "string"},
+    "daemon": {"type": "boolean"},
+    "gui_frame_count": {"type": "integer", "minimum": 0},
+    "available_adapters": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": true
+}

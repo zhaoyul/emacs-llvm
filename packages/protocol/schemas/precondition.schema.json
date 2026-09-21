@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://emacs-operator.local/schema/precondition.json",
+  "type": "object",
+  "properties": {
+    "expected_state_seq": {"type": "integer", "minimum": 0},
+    "expected_buffer_id": {"type": "string", "minLength": 1},
+    "expected_buffer_tick": {"type": "integer", "minimum": 0},
+    "expected_major_mode": {"type": "string", "minLength": 1},
+    "expected_frontmost_pid": {"type": "integer", "minimum": 1}
+  },
+  "additionalProperties": false
+}

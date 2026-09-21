@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://redcreation.cn/schemas/emacs-operator/benchmark-experiment-1.0.json",
+  "title": "Emacs Operator paired benchmark experiment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "kind", "created_at", "suite", "pairing_key", "trials", "seed", "execution_order", "command_checks_enabled", "profiles", "reports", "summary", "caveat"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "kind": {"const": "emacs_operator_paired_benchmark_experiment"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "suite": {"type": "object", "required": ["id", "revision", "digest"], "properties": {"id": {"type": "string"}, "revision": {"type": "string"}, "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}},
+    "pairing_key": {"type": "string", "minLength": 1},
+    "trials": {"type": "integer", "minimum": 1, "maximum": 100},
+    "seed": {"type": "integer", "minimum": 0, "maximum": 4294967295},
+    "execution_order": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"enum": ["baseline", "candidate"]}},
+    "command_checks_enabled": {"type": "boolean"},
+    "profiles": {"type": "object", "required": ["baseline", "candidate"], "properties": {"baseline": {"type": "object"}, "candidate": {"type": "object"}}},
+    "reports": {"type": "object", "required": ["baseline", "candidate", "comparison"], "properties": {"baseline": {"type": "string"}, "candidate": {"type": "string"}, "comparison": {"type": "string"}}},
+    "summary": {"type": "object"},
+    "caveat": {"type": "string", "minLength": 1}
+  }
+}

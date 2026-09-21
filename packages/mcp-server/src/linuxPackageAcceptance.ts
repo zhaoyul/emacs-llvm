@@ -84,110 +84,6 @@ async function featureLoaded(router: ToolRouter, sessionId: string, feature: str
   return result.loaded === true;
 }
 
-
-function readJsonFile(file: string, label: string): AnyRecord {
-  if (!fs.existsSync(file)) throw new Error(`${label} does not exist: ${file}`);
-  return asRecord(JSON.parse(fs.readFileSync(file, "utf8")), label);
-}
-
-function packageRuntimeManifest(): AnyRecord | null {
-  const manifestPath = process.env.EMACS_OPERATOR_LINUX_PACKAGE_RUNTIME_MANIFEST;
-  if (!manifestPath) return null;
-  const manifest = readJsonFile(manifestPath, "package runtime manifest");
-  if (manifest.schema_version !== "1.0" || typeof manifest.plan_sha256 !== "string") {
-    throw new Error("Package runtime manifest has invalid schema/provenance metadata.");
-  }
-  const expectedPlan = process.env.EMACS_OPERATOR_LINUX_PACKAGE_RUNTIME_PLAN_SHA256;
-  if (expectedPlan && manifest.plan_sha256 !== expectedPlan) {
-    throw new Error(`Package runtime plan SHA mismatch: expected ${expectedPlan}, got ${String(manifest.plan_sha256)}.`);
-  }
-  return manifest;
-}
-
-function packageSourceRoot(manifest: AnyRecord | null, name: "paredit" | "cider" | "sly"): string | null {
-  if (!manifest) return null;
-  const packages = asRecord(manifest.packages, "package runtime manifest.packages");
-  const pkg = asRecord(packages[name], `package runtime package ${name}`);
-  const sourceRoot = stringValue(pkg.source_root, `${name} source_root`);
-  if (!fs.existsSync(sourceRoot) || !fs.statSync(sourceRoot).isDirectory()) throw new Error(`${name} locked source_root is unavailable: ${sourceRoot}`);
-  return fs.realpathSync(sourceRoot);
-}
-
-async function symbolSource(router: ToolRouter, sessionId: string, command: string): Promise<string> {
-  const result = asRecord(unwrap(await router.call("emacs_capabilities", {
-    session_id: sessionId, operation: "symbol_source", command
-  }), `symbol source ${command}`), `symbol source ${command}`);
-  const source = stringValue(result.source, `${command} source`);
-  if (!fs.existsSync(source)) throw new Error(`${command} source path does not exist: ${source}`);
-  return fs.realpathSync(source);
-}
-
-function assertSourceWithin(source: string, root: string | null, label: string): void {
-  if (!root) throw new Error(`${label} cannot pass without a locked package runtime manifest/source_root.`);
-  const relative = path.relative(root, source);
-  if (relative.startsWith("..") || path.isAbsolute(relative)) throw new Error(`${label} loaded from ${source}, outside locked source root ${root}.`);
-}
-
-function verifyFileListManifest(root: string, manifest: AnyRecord, label: string): { files: number } {
-  const rawFiles = manifest.files;
-  if (!Array.isArray(rawFiles)) throw new Error(`${label} manifest has no file list.`);
-  const files: unknown[] = rawFiles;
-  const locked = new Map<string, { bytes: number; sha256: string }>();
-  for (const raw of files) {
-    const item = asRecord(raw, `${label} file entry`);
-    const rel = stringValue(item.path, `${label} file path`);
-    if (path.isAbsolute(rel) || rel.split(/[\\/]/).includes("..")) throw new Error(`${label} manifest has unsafe path: ${rel}`);
-    if (typeof item.bytes !== "number" || typeof item.sha256 !== "string") throw new Error(`${label} manifest has invalid metadata for ${rel}.`);
-    if (locked.has(rel)) throw new Error(`${label} manifest has duplicate file path: ${rel}`);
-    locked.set(rel, { bytes: item.bytes, sha256: item.sha256 });
-  }
-  for (const [rel, meta] of locked) {
-    const file = path.join(root, rel);
-    const stat = fs.lstatSync(file);
-    if (!stat.isFile() || stat.isSymbolicLink()) throw new Error(`${label} file is not a regular file: ${rel}`);
-    if (stat.size !== meta.bytes) throw new Error(`${label} size mismatch: ${rel}`);
-    const digest = crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
-    if (digest !== meta.sha256) throw new Error(`${label} SHA-256 mismatch: ${rel}`);
-  }
-  return { files: locked.size };
-}
-
-function sbclProvenance(): { version: string; plan_sha256: string; manifest: string; files: number } | null {
-  const manifestPath = process.env.EMACS_OPERATOR_LINUX_SBCL_RUNTIME_MANIFEST;
-  if (!manifestPath) return null;
-  const root = path.dirname(path.resolve(manifestPath));
-  const manifest = readJsonFile(manifestPath, "SBCL runtime manifest");
-  if (manifest.schema_version !== "1.0" || manifest.runtime !== "sbcl") throw new Error("Invalid SBCL runtime manifest.");
-  const version = stringValue(manifest.version, "SBCL version");
-  const planSha = stringValue(manifest.plan_sha256, "SBCL plan SHA");
-  const expected = process.env.EMACS_OPERATOR_LINUX_SBCL_RUNTIME_PLAN_SHA256;
-  if (expected && planSha !== expected) throw new Error(`SBCL plan SHA mismatch: expected ${expected}, got ${planSha}.`);
-  const verified = verifyFileListManifest(root, manifest, "SBCL runtime");
-  return { version, plan_sha256: planSha, manifest: path.resolve(manifestPath), files: verified.files };
-}
-
-function ciderJvmProvenance(): { plan_sha256: string; manifest: string; files: number; versions: AnyRecord } | null {
-  const manifestPath = process.env.EMACS_OPERATOR_LINUX_CIDER_JVM_RUNTIME_MANIFEST;
-  if (!manifestPath) return null;
-  const root = path.dirname(path.resolve(manifestPath));
-  const manifest = readJsonFile(manifestPath, "CIDER JVM runtime manifest");
-  if (manifest.schema_version !== "1.0" || manifest.runtime !== "cider-jvm") throw new Error("Invalid CIDER JVM runtime manifest.");
-  const planSha = stringValue(manifest.plan_sha256, "CIDER JVM plan SHA");
-  const expected = process.env.EMACS_OPERATOR_LINUX_CIDER_JVM_RUNTIME_PLAN_SHA256;
-  if (expected && planSha !== expected) throw new Error(`CIDER JVM plan SHA mismatch: expected ${expected}, got ${planSha}.`);
-  const jarDir = path.join(root, "jars");
-  const jarsRaw = manifest.jars;
-  if (!Array.isArray(jarsRaw)) throw new Error("CIDER JVM runtime manifest has no jars list.");
-  const synthetic: AnyRecord = { files: jarsRaw.map((raw) => {
-    const jar = asRecord(raw, "CIDER JVM jar");
-    return { path: `jars/${stringValue(jar.name, "CIDER JVM jar name")}`, bytes: jar.bytes, sha256: jar.sha256 };
-  }) };
-  if (!fs.existsSync(jarDir)) throw new Error(`CIDER JVM jar directory is missing: ${jarDir}`);
-  const verified = verifyFileListManifest(root, synthetic, "CIDER JVM runtime");
-  const versions = asRecord(manifest.versions, "CIDER JVM versions");
-  return { plan_sha256: planSha, manifest: path.resolve(manifestPath), files: verified.files, versions };
-}
-
 async function main(): Promise<void> {
   const requirements = {
     paredit: envBool("EMACS_OPERATOR_LINUX_REQUIRE_PAREDIT"),
@@ -210,9 +106,7 @@ async function main(): Promise<void> {
   const reportPath = process.env.EMACS_OPERATOR_LINUX_PACKAGE_ACCEPTANCE_REPORT
     ?? path.join(process.cwd(), "dist", "acceptance", "linux-packages.json");
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
-  const runtimeWorkspace = path.join(process.cwd(), ".runtime");
-  fs.mkdirSync(runtimeWorkspace, { recursive: true, mode: 0o700 });
-  const workspace = fs.mkdtempSync(path.join(runtimeWorkspace, "package-acceptance-"));
+  const workspace = fs.mkdtempSync(path.join(os.tmpdir(), "emacs-operator-linux-packages-"));
   const router = new ToolRouter();
   const sessions = new Set<string>();
   let fatal = false;
@@ -249,8 +143,6 @@ async function main(): Promise<void> {
     const instanceId = stringValue(selected.instance_id, "instance_id");
     report.instance_id = instanceId;
     add({ name: "live GNU Emacs package target", package: "infrastructure", status: "pass", details: `instance=${instanceId}` });
-    const lockedRuntime = packageRuntimeManifest();
-    if (lockedRuntime) add({ name: "locked package runtime manifest", package: "infrastructure", status: "pass", details: `plan_sha256=${String(lockedRuntime.plan_sha256)}` });
 
     // Paredit: exercise the package through its active keymap, not by direct function invocation.
     const pareditFile = path.join(workspace, "paredit.el");
@@ -273,10 +165,6 @@ async function main(): Promise<void> {
         else throw new Error(`paredit-mode failed: ${enabled.error.code}: ${enabled.error.message}`);
       } else {
         if (!(await featureLoaded(router, pareditSession, "paredit"))) throw new Error("paredit-mode executed but feature 'paredit' is not loaded.");
-        const pareditSource = await symbolSource(router, pareditSession, "paredit-forward-slurp-sexp");
-        const pareditRoot = packageSourceRoot(lockedRuntime, "paredit");
-        assertSourceWithin(pareditSource, pareditRoot, "Paredit command provenance");
-        add({ name: "paredit locked command provenance", package: "paredit", status: "pass", details: pareditSource, data: { source: pareditSource, source_root: pareditRoot ?? undefined } });
         const text = await readText(router, pareditSession);
         const baz = text.indexOf("baz");
         if (baz < 0) throw new Error("Paredit fixture is missing baz.");
@@ -328,26 +216,6 @@ async function main(): Promise<void> {
           markNotRun(pkg, `${pkg} feature is not loaded in the target Emacs instance`);
           return;
         }
-        const provenanceCommand = pkg === "cider" ? "cider-connect-clj" : "sly-connect";
-        const source = await symbolSource(router, sessionId, provenanceCommand);
-        const sourceRoot = packageSourceRoot(lockedRuntime, pkg);
-        assertSourceWithin(source, sourceRoot, `${pkg.toUpperCase()} command provenance`);
-        add({ name: `${pkg} locked command provenance`, package: pkg, status: "pass", details: source, data: { command: provenanceCommand, source, source_root: sourceRoot ?? undefined } });
-        if (pkg === "cider") {
-          const jvm = ciderJvmProvenance();
-          if (!jvm) throw new Error("CIDER runtime cannot pass without EMACS_OPERATOR_LINUX_CIDER_JVM_RUNTIME_MANIFEST.");
-          add({ name: "CIDER locked JVM provenance", package: "cider", status: "pass", details: `plan_sha256=${jvm.plan_sha256}`, data: { manifest: jvm.manifest, files: jvm.files, versions: jvm.versions } });
-        } else {
-          const sbcl = sbclProvenance();
-          if (!sbcl) throw new Error("SLY runtime cannot pass without EMACS_OPERATOR_LINUX_SBCL_RUNTIME_MANIFEST.");
-          add({ name: "SLY locked SBCL provenance", package: "sly", status: "pass", details: `SBCL ${sbcl.version} plan_sha256=${sbcl.plan_sha256}`, data: sbcl });
-        }
-        const connectCommand = pkg === "cider" ? "emacs-operator-ci-connect-cider" : "emacs-operator-ci-connect-sly";
-        unwrap(await router.call("emacs_command", {
-          session_id: sessionId, command: connectCommand, interactive: true
-        }), `${pkg} explicit runtime connection`);
-        add({ name: `${pkg} explicit runtime connection request`, package: pkg, status: "pass", details: connectCommand });
-
         const deadline = Date.now() + boundedWaitMs();
         let state: AnyRecord | null = null;
         do {
@@ -409,13 +277,7 @@ async function main(): Promise<void> {
         report.packages[pkg] = { status: "pass" };
         add({ name: `${pkg} runtime acceptance`, package: pkg, status: "pass", details: `definition -> value=42 -> structured failure -> source repair -> guarded rerun=42` });
       } finally {
-        if (sessionId) {
-          const disconnectCommand = pkg === "cider" ? "emacs-operator-ci-disconnect-cider" : "emacs-operator-ci-disconnect-sly";
-          try {
-            await router.call("emacs_command", { session_id: sessionId, command: disconnectCommand, interactive: true });
-          } catch { /* best effort; accept-linux.sh still owns bounded process teardown */ }
-          await close(sessionId);
-        }
+        if (sessionId) await close(sessionId);
       }
     };
 

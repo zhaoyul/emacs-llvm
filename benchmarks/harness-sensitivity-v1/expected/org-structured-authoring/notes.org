@@ -1,0 +1,20 @@
+#+title: Benchmark Notes
+
+Existing introduction. Keep this line.
+
+* Project
+:PROPERTIES:
+:OWNER: Kevin
+:END:
+
+** Data
+
+| Metric | Value |
+|--------+-------|
+| Answer |    42 |
+
+** Computation
+
+#+begin_src emacs-lisp :results value
+(+ 40 2)
+#+end_src

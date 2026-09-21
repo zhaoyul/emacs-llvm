@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Emacs Operator Paired Agent Experiment Configuration",
+  "type": "object",
+  "required": ["schema_version","run_seed","trials","suite","baseline","candidate","workspace_factory","output_dir"],
+  "properties": {
+    "schema_version": {"const":"1.0"},
+    "run_seed": {"type":"integer"},
+    "trials": {"type":"integer","minimum":1,"maximum":100},
+    "output_dir": {"type":"string","minLength":1}
+  },
+  "additionalProperties": true
+}

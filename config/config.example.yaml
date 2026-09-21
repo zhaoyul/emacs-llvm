@@ -1,0 +1,24 @@
+runtime:
+  directory: null
+  driver_directory: null
+  capture_directory: null
+  session_ttl_ms: 1800000
+  bridge_timeout_ms: 10000
+  max_bridge_message_bytes: 1048576
+
+policy:
+  default_profile: workspace_edit
+  allow_arbitrary_elisp: false
+  native_keys_profile: trusted_local
+  capture_profile: trusted_local
+
+audit:
+  enabled: true
+  include_buffer_text: false
+  include_screenshot_data: false
+
+native_driver:
+  enabled: true
+  require_accessibility_for_keys: true
+  require_screen_recording_for_capture: true
+  restore_frontmost_after_native_sequence: true

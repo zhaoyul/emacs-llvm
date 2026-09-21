@@ -1,0 +1,20 @@
+{
+  "id": "filesystem-baseline",
+  "revision": "experiment-001",
+  "command": "/absolute/path/to/provider-neutral-agent-driver",
+  "args": [],
+  "tool_profile": "filesystem-shell-without-emacs-operator",
+  "provider": "same-provider",
+  "model": "same-model",
+  "model_version": "same-snapshot",
+  "prompt_policy": "identical-lisp-org-v1-prompts",
+  "temperature": 0,
+  "top_p": 1,
+  "max_context_tokens": 128000,
+  "cross_trial_memory": "disabled",
+  "network_access": "disabled",
+  "shell_access": "enabled",
+  "pairing_key": "pair-001",
+  "env_passthrough": [],
+  "secret_env_names": []
+}

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://emacs-operator.local/schema/tool-envelope.json",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": ["ok", "request_id", "result", "warnings", "audit_id"],
+      "properties": {
+        "ok": {"const": true},
+        "request_id": {"type": "string", "minLength": 1},
+        "session_id": {"type": "string"},
+        "state_before": {"type": "object"},
+        "state_after": {"type": "object"},
+        "result": {},
+        "warnings": {"type": "array", "items": {"type": "string"}},
+        "audit_id": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": ["ok", "request_id", "error", "warnings", "audit_id"],
+      "properties": {
+        "ok": {"const": false},
+        "request_id": {"type": "string", "minLength": 1},
+        "session_id": {"type": "string"},
+        "error": {
+          "type": "object",
+          "required": ["code", "category", "message", "retryable", "recovery"],
+          "properties": {
+            "code": {"type": "string", "pattern": "^E_[A-Z0-9_]+$"},
+            "category": {"type": "integer", "minimum": 400, "maximum": 599},
+            "message": {"type": "string"},
+            "retryable": {"type": "boolean"},
+            "details": {"type": "object"},
+            "recovery": {"type": "string"}
+          },
+          "additionalProperties": false
+        },
+        "warnings": {"type": "array", "items": {"type": "string"}},
+        "audit_id": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    }
+  ]
+}

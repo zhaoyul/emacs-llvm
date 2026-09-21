@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://redcreation.cn/schemas/emacs-operator/benchmark-suite-1.0.json",
+  "title": "Emacs Operator benchmark suite",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "revision", "title", "tasks"],
+  "properties": {
+    "$schema": {"type": "string"},
+    "schema_version": {"const": "1.0"},
+    "id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "revision": {"type": "string", "minLength": 1, "maxLength": 128},
+    "title": {"type": "string", "minLength": 1, "maxLength": 512},
+    "description": {"type": "string", "maxLength": 8192},
+    "defaults": {"$ref": "#/$defs/defaults"},
+    "tasks": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/task"}}
+  },
+  "$defs": {
+    "positiveInteger": {"type": "integer", "minimum": 1},
+    "relativePath": {"type": "string", "minLength": 1, "not": {"pattern": "^(?:/|[A-Za-z]:[/\\\\]|\\.\\.(?:/|$))"}},
+    "defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "timeout_ms": {"type": "integer", "minimum": 1, "maximum": 3600000},
+        "trials": {"type": "integer", "minimum": 1, "maximum": 100},
+        "pass_threshold": {"type": "number", "minimum": 0, "maximum": 1},
+        "max_workspace_bytes": {"type": "integer", "minimum": 1, "maximum": 1073741824},
+        "max_agent_output_bytes": {"type": "integer", "minimum": 1024, "maximum": 67108864}
+      }
+    },
+    "requirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "executables": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+        "platforms": {"type": "array", "items": {"enum": ["darwin", "linux", "win32"]}, "uniqueItems": true},
+        "environment": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true}
+      }
+    },
+    "checkBase": {
+      "type": "object",
+      "required": ["id", "type"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "type": {"type": "string"},
+        "weight": {"type": "number", "exclusiveMinimum": 0},
+        "required": {"type": "boolean"},
+        "description": {"type": "string", "maxLength": 4096}
+      }
+    },
+    "fileCheck": {
+      "allOf": [
+        {"$ref": "#/$defs/checkBase"},
+        {"type": "object", "required": ["path"], "properties": {"path": {"$ref": "#/$defs/relativePath"}}}
+      ]
+    },
+    "check": {
+      "oneOf": [
+        {"allOf": [{"$ref": "#/$defs/fileCheck"}, {"type": "object", "properties": {"type": {"const": "file_exists"}}}]},
+        {"allOf": [{"$ref": "#/$defs/fileCheck"}, {"type": "object", "properties": {"type": {"const": "file_unchanged"}}}]},
+        {"allOf": [{"$ref": "#/$defs/fileCheck"}, {"type": "object", "required": ["text"], "properties": {"type": {"const": "text_contains"}, "text": {"type": "string", "minLength": 1}, "min_count": {"type": "integer", "minimum": 0}}}]},
+        {"allOf": [{"$ref": "#/$defs/fileCheck"}, {"type": "object", "required": ["text"], "properties": {"type": {"const": "text_not_contains"}, "text": {"type": "string", "minLength": 1}}}]},
+        {"allOf": [{"$ref": "#/$defs/fileCheck"}, {"type": "object", "required": ["pattern"], "properties": {"type": {"const": "regex_count"}, "pattern": {"type": "string", "minLength": 1}, "flags": {"type": "string"}, "min_count": {"type": "integer", "minimum": 0}, "max_count": {"type": "integer", "minimum": 0}}}]},
+        {"allOf": [{"$ref": "#/$defs/fileCheck"}, {"type": "object", "properties": {"type": {"const": "exact_text"}, "expected_text": {"type": "string"}, "expected_file": {"$ref": "#/$defs/relativePath"}, "normalize_final_newline": {"type": "boolean"}}, "oneOf": [{"required": ["expected_text"]}, {"required": ["expected_file"]}]}]},
+        {"allOf": [{"$ref": "#/$defs/fileCheck"}, {"type": "object", "properties": {"type": {"const": "lisp_balance"}}}]},
+        {"allOf": [{"$ref": "#/$defs/fileCheck"}, {"type": "object", "required": ["expect"], "properties": {"type": {"const": "org_structure"}, "expect": {"type": "object", "additionalProperties": false, "properties": {"min_headings": {"type": "integer", "minimum": 0}, "exact_headings": {"type": "integer", "minimum": 0}, "required_titles": {"type": "array", "items": {"type": "string"}}, "min_tables": {"type": "integer", "minimum": 0}, "exact_tables": {"type": "integer", "minimum": 0}, "min_src_blocks": {"type": "integer", "minimum": 0}, "exact_src_blocks": {"type": "integer", "minimum": 0}, "required_languages": {"type": "array", "items": {"type": "string"}}, "required_properties": {"type": "object", "additionalProperties": {"type": "string"}}}}}}]},
+        {"allOf": [{"$ref": "#/$defs/checkBase"}, {"type": "object", "required": ["command"], "properties": {"type": {"const": "command"}, "command": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}, "cwd": {"$ref": "#/$defs/relativePath"}, "timeout_ms": {"type": "integer", "minimum": 1, "maximum": 300000}, "expected_exit_code": {"type": "integer", "minimum": 0, "maximum": 255}, "stdout_contains": {"type": "string"}, "stderr_contains": {"type": "string"}}}]}
+      ]
+    },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "domain", "category", "difficulty", "prompt_file", "fixture_dir", "checks"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+        "title": {"type": "string", "minLength": 1},
+        "description": {"type": "string"},
+        "domain": {"enum": ["elisp", "clojure", "common_lisp", "org", "mixed"]},
+        "category": {"enum": ["repair", "refactor", "authoring", "navigation", "evaluation"]},
+        "difficulty": {"enum": ["small", "medium", "large"]},
+        "prompt_file": {"$ref": "#/$defs/relativePath"},
+        "fixture_dir": {"$ref": "#/$defs/relativePath"},
+        "tags": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "requirements": {"$ref": "#/$defs/requirements"},
+        "checks": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/check"}},
+        "protected_paths": {"type": "array", "items": {"$ref": "#/$defs/relativePath"}},
+        "allowed_paths": {"type": "array", "items": {"$ref": "#/$defs/relativePath"}},
+        "pass_threshold": {"type": "number", "minimum": 0, "maximum": 1},
+        "timeout_ms": {"type": "integer", "minimum": 1, "maximum": 3600000}
+      }
+    }
+  }
+}

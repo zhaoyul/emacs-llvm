@@ -1,0 +1,39 @@
+{
+  "manifest_version": "0.3",
+  "name": "emacs-operator",
+  "display_name": "Emacs Operator",
+  "version": "0.1.0-alpha.16",
+  "description": "Operate GNU Emacs from an MCP agent through semantic RPC, Emacs-internal keymaps, and guarded native desktop interaction.",
+  "long_description": "Emacs Operator exposes GNU Emacs as a stateful agent runtime. The MCP server discovers a local Emacs bridge, opens explicit sessions, observes buffer and mode state, performs transactional edits, executes active Emacs keymaps, and can use a separately installed native Host for real desktop input and selected-window capture. macOS uses Accessibility, CGEvent, and ScreenCaptureKit. Linux Alpha.13 uses an X11/XTest Host and reports Wayland/uinput limitations explicitly. The bundle contains companion Elisp and Agent Skill resources, while native Hosts remain explicit platform installations.",
+  "author": {
+    "name": "Emacs Operator Contributors"
+  },
+  "server": {
+    "type": "node",
+    "entry_point": "server/packages/mcp-server/src/server.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/server/packages/mcp-server/src/server.js"
+      ]
+    }
+  },
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ],
+    "runtimes": {
+      "node": ">=22.0.0"
+    }
+  },
+  "keywords": [
+    "emacs",
+    "lisp",
+    "org-mode",
+    "mcp",
+    "agent",
+    "automation"
+  ]
+}

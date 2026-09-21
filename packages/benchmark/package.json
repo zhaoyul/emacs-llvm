@@ -1,0 +1,14 @@
+{
+  "name": "@emacs-operator/benchmark",
+  "version": "0.1.0-alpha.16",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.js"
+    }
+  }
+}

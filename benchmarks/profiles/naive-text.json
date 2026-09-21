@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "id": "naive-text",
+  "revision": "2026-08-31.1",
+  "label": "Intentionally naive text implementation",
+  "kind": "deterministic_harness_probe",
+  "tool_profile": "global-text-replacement",
+  "prompt_policy": "benchmark-directive-v1",
+  "cross_trial_memory": "disabled",
+  "network_access": "disabled",
+  "description": "An intentionally weak deterministic implementation used to prove that benchmark checks detect collateral edits and structural damage. It is not an LLM baseline.",
+  "pairing_key": "harness-sensitivity-deterministic-v1",
+  "provider": "local-deterministic",
+  "model": "benchmark-probe",
+  "model_version": "1",
+  "temperature": 0,
+  "top_p": 1,
+  "max_context_tokens": 4096
+}
