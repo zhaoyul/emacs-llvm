@@ -11,7 +11,7 @@ final class MacOSDesktopDriver: @unchecked Sendable, DesktopDriver {
 
     func capabilities() async throws -> DriverCapabilities {
         let accessibility = permissionsManager.accessibilityTrusted()
-        DriverCapabilities(
+        return DriverCapabilities(
             protocolVersion: "1.0",
             nativeKeyboard: accessibility,
             windowFocus: accessibility,
