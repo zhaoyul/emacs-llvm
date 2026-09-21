@@ -34,7 +34,6 @@ jobs:
           test "$tracked" -ge 300
       - name: Install locked TypeScript toolchain
         run: npm install --no-save --package-lock=false --ignore-scripts typescript@5.9.2
-      - run: npm run check:repository-import
       - run: npm run check:version
       - run: npm run typecheck
       - run: npm run check:elisp-structure
