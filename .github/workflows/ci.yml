@@ -84,5 +84,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: swift test --package-path apps/macos-host
-      - run: bash scripts/build-macos-host.sh "$RUNNER_TEMP/EmacsOperatorHost.app"
-      - run: codesign --verify --deep --strict "$RUNNER_TEMP/EmacsOperatorHost.app"
+      - run: bash scripts/build-macos-host.sh "$RUNNER_TEMP/macos-host"
+      - run: codesign --verify --deep --strict "$RUNNER_TEMP/macos-host/EmacsOperatorHost.app"
