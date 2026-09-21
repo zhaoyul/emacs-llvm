@@ -5,8 +5,9 @@ The canonical repository stores the Emacs Operator source tree directly at the r
 ## Portable repository gate
 
 ```bash
-npm ci
-npm run check:repository-import
+npm install --no-save --package-lock=false --ignore-scripts typescript@5.9.2
+test -f package.json
+test ! -e .bootstrap
 npm run check:version
 npm run typecheck
 npm run check:elisp-structure
@@ -16,7 +17,7 @@ npm run test:agent-experiment
 npm run linux-host:test
 ```
 
-`.github/workflows/remote-publication-verification.yml` executes the same contract against the public `main` branch. It additionally requires version `0.1.0-alpha.16`, at least 300 tracked source files, required Linux/macOS/Emacs runtime paths, and no `.bootstrap` directory.
+`.github/workflows/remote-publication-verification.yml` executes the same contract against the public `main` branch using explicit canonical-tree checks rather than a migration-only npm script. It additionally requires version `0.1.0-alpha.16`, at least 300 tracked source files, required Linux/macOS/Emacs runtime paths, and no `.bootstrap` directory.
 
 ## Release artifact workflow
 
