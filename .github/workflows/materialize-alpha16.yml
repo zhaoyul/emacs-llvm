@@ -60,7 +60,8 @@ jobs:
             test "$(wc -c < "$part")" -eq 16000
           done
 
-          for i in $(seq -w 0 44); do
+          for n in $(seq 0 44); do
+            printf -v i '%03d' "$n"
             test -f "$dir/tail-${i}.b64"
             test "$(wc -c < "$dir/tail-${i}.b64")" -eq 8000
           done
