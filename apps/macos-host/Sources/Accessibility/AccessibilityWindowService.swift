@@ -121,11 +121,12 @@ struct AccessibilityWindowService: Sendable {
         guard let info = CGWindowListCopyWindowInfo([.optionIncludingWindow], windowID) as? [[CFString: Any]] else { return nil }
         for window in info {
             guard (window[kCGWindowOwnerPID] as? NSNumber)?.int32Value == pid,
-                  let rawBounds = window[kCGWindowBounds] else { continue }
-            // CoreGraphics documents kCGWindowBounds as a CFDictionary. Swift 6
-            // rejects a conditional cast here because the CoreFoundation bridge
-            // is unconditional, so make that bridge explicit.
-            let dictionary = rawBounds as CFDictionary
+                  let rawBounds = window[kCGWindowBounds],
+                  let boundsDictionary = rawBounds as? [String: Any] else { continue }
+            // CoreGraphics returns the bounds as a property-list dictionary.
+            // Narrow the dynamic Any value into a Swift dictionary first, then
+            // use the supported Swift Dictionary -> CFDictionary bridge.
+            let dictionary = boundsDictionary as CFDictionary
             var bounds = CGRect.zero
             if CGRectMakeWithDictionaryRepresentation(dictionary, &bounds) { return bounds }
         }
