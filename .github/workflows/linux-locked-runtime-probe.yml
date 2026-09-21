@@ -5,7 +5,6 @@ on:
     branches:
       - codex/import-alpha16-source-final
     paths:
-      - .github/workflows/linux-locked-runtime-probe.yml
       - .github/ci/locked-runtime-probe.el
       - .bootstrap/alpha18-runtime-v3/**
   workflow_dispatch:
@@ -35,7 +34,10 @@ jobs:
         run: |
           set -euo pipefail
           root="$RUNNER_TEMP/locked-sources"
-          mkdir -p "$root"
+          runtime="$RUNNER_TEMP/runtime-probe"
+          mkdir -p "$root" "$runtime"
+          : > "$runtime/source-commits.txt"
+          echo "RUNTIME_PROBE_DIR=$runtime" >> "$GITHUB_ENV"
 
           clone_locked() {
             local name="$1"
@@ -47,7 +49,7 @@ jobs:
             git -C "$dir" fetch -q --depth 1 origin "$commit"
             git -C "$dir" checkout -q --detach FETCH_HEAD
             test "$(git -C "$dir" rev-parse HEAD)" = "$commit"
-            printf '%s %s\n' "$name" "$commit"
+            printf '%s %s\n' "$name" "$commit" | tee -a "$runtime/source-commits.txt"
           }
 
           clone_locked paredit https://github.com/emacsmirror/paredit.git af075775af91f2dbc63b915d762b4aec092946c4
@@ -92,8 +94,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          runtime="$RUNNER_TEMP/runtime-probe"
-          mkdir -p "$runtime"
+          runtime="$RUNTIME_PROBE_DIR"
           cat > "$runtime/pom.xml" <<'EOF'
           <project xmlns="http://maven.apache.org/POM/4.0.0"
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -144,20 +145,20 @@ jobs:
           done < <(tr ':' '\n' < "$runtime/cider-classpath.txt")
           sort -o "$runtime/cider-jars.sha256" "$runtime/cider-jars.sha256"
 
-          echo "RUNTIME_PROBE_DIR=$runtime" >> "$GITHUB_ENV"
           echo "CIDER_CLASSPATH_FILE=$runtime/cider-classpath.txt" >> "$GITHUB_ENV"
 
       - name: Provision pinned private SBCL
         shell: bash
         run: |
           set -euo pipefail
-          runtime="$RUNNER_TEMP/runtime-probe"
+          runtime="$RUNTIME_PROBE_DIR"
           archive="$runtime/sbcl-2.6.8-x86-64-linux-binary.tar.bz2"
           url="https://downloads.sourceforge.net/project/sbcl/sbcl/2.6.8/sbcl-2.6.8-x86-64-linux-binary.tar.bz2"
           expected="5391773774b94554a015db9f992370d06937fb6f0cdb0b2142281aebef9e96c1"
 
           curl --fail --location --retry 5 --retry-all-errors --output "$archive" "$url"
           echo "$expected  $archive" | sha256sum --check --strict
+          sha256sum "$archive" > "$runtime/sbcl-archive.sha256"
 
           unpack="$runtime/sbcl-unpack"
           prefix="$runtime/sbcl"
@@ -252,6 +253,13 @@ jobs:
         with:
           name: locked-runtime-probe-${{ github.run_id }}
           path: |
-            ${{ runner.temp }}/runtime-probe/
+            ${{ runner.temp }}/runtime-probe/runtime-probe.json
+            ${{ runner.temp }}/runtime-probe/source-commits.txt
+            ${{ runner.temp }}/runtime-probe/cider-classpath.txt
+            ${{ runner.temp }}/runtime-probe/cider-jars.sha256
+            ${{ runner.temp }}/runtime-probe/sbcl-archive.sha256
+            ${{ runner.temp }}/runtime-probe/sbcl-version.txt
+            ${{ runner.temp }}/runtime-probe/nrepl.log
+            ${{ runner.temp }}/runtime-probe/slynk.log
           if-no-files-found: warn
           retention-days: 14
