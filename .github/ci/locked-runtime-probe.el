@@ -100,24 +100,16 @@
          (response
           (cider-nrepl-sync-request:eval
            "(+ 20 22)" repl))
-         (bad-response
+         (condition-response
           (cider-nrepl-sync-request:eval
-           "(do (defn eo-probe-fn [] (/ 1 0)) (eo-probe-fn))"
+           "(try (throw (ex-info \"EO-PROBE-BOOM\" {:kind :runtime-probe})) (catch Throwable e {:condition-class (.getName (class e)) :message (.getMessage e) :data (ex-data e)}))"
            repl))
-         (bad-ex
-          (or (nrepl-dict-get bad-response "ex")
-              (nrepl-dict-get bad-response "root-ex")))
-         (bad-err
-          (nrepl-dict-get bad-response "err"))
-         (bad-status
-          (nrepl-dict-get bad-response "status"))
          (version-dict
           (nrepl-aux-info "cider-version" repl)))
     (setq cider-value
           (nrepl-dict-get response "value"))
     (setq cider-condition
-          (format "ex=%S err=%S status=%S"
-                  bad-ex bad-err bad-status))
+          (nrepl-dict-get condition-response "value"))
     (setq cider-middleware-version
           (nrepl-dict-get version-dict "version-string"))
 
