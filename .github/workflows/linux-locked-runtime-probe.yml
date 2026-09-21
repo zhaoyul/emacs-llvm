@@ -1,0 +1,257 @@
+name: Linux Locked Runtime Probe
+
+on:
+  push:
+    branches:
+      - codex/import-alpha16-source-final
+    paths:
+      - .github/workflows/linux-locked-runtime-probe.yml
+      - .github/ci/locked-runtime-probe.el
+      - .bootstrap/alpha18-runtime-v3/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runtime-probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install runtime prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y \
+            emacs-gtk xvfb xauth dbus-x11 \
+            openjdk-17-jre-headless maven \
+            bzip2 curl git
+
+      - name: Acquire exact Emacs package sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/locked-sources"
+          mkdir -p "$root"
+
+          clone_locked() {
+            local name="$1"
+            local repository="$2"
+            local commit="$3"
+            local dir="$root/$name"
+            git init -q "$dir"
+            git -C "$dir" remote add origin "$repository"
+            git -C "$dir" fetch -q --depth 1 origin "$commit"
+            git -C "$dir" checkout -q --detach FETCH_HEAD
+            test "$(git -C "$dir" rev-parse HEAD)" = "$commit"
+            printf '%s %s\n' "$name" "$commit"
+          }
+
+          clone_locked paredit https://github.com/emacsmirror/paredit.git af075775af91f2dbc63b915d762b4aec092946c4
+          clone_locked clojure-mode https://github.com/clojure-emacs/clojure-mode.git 3c68569738f04a22d52f1ca28f593c2ee733bf04
+          clone_locked compat https://github.com/emacs-compat/compat.git 90880f81419577e1d3f68424d2a3adf31e6d663e
+          clone_locked parseedn https://github.com/clojure-emacs/parseedn.git 1a28a88e2aabd99b41e02f491d6b8874ec128d7d
+          clone_locked parseclj https://github.com/clojure-emacs/parseclj.git ca828c202c026e45bd60503984cf510d904cae50
+          clone_locked queue https://github.com/emacs-packages/queue.el.git cbeb1b8573023a7768d8038c2d046d35210e0d81
+          clone_locked spinner https://github.com/Malabarba/spinner.el.git d4647ae87fb0cd24bc9081a3d287c860ff061c21
+          clone_locked sesman https://github.com/vspinu/sesman.git 7eb733acb33e610a53979fa7fc13393eeda3cc53
+          clone_locked cider https://github.com/clojure-emacs/cider.git c17d11494b35502079caeac2fe7c39173349ce10
+          clone_locked sly https://github.com/joaotavora/sly.git 3ffa216d0818972f7a7fea38a566a6b570349f3b
+
+          {
+            echo "LOCKED_SOURCES=$root"
+            echo "PAREDIT_ROOT=$root/paredit"
+            echo "CLOJURE_MODE_ROOT=$root/clojure-mode"
+            echo "COMPAT_ROOT=$root/compat"
+            echo "PARSEEDN_ROOT=$root/parseedn"
+            echo "PARSECLJ_ROOT=$root/parseclj"
+            echo "QUEUE_ROOT=$root/queue"
+            echo "SPINNER_ROOT=$root/spinner"
+            echo "SESMAN_ROOT=$root/sesman"
+            echo "CIDER_ROOT=$root/cider"
+            echo "SLY_ROOT=$root/sly"
+          } >> "$GITHUB_ENV"
+
+      - name: Verify GNU Emacs baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          emacs --version | head -1
+          emacs --batch -Q --eval \
+            '(unless (version<= "29.2" emacs-version) (error "Need GNU Emacs >= 29.2, got %s" emacs-version))'
+          emacs --batch -Q --eval \
+            '(progn (require (quote seq)) (require (quote transient)) (require (quote map))
+                    (princ (format "seq=%s transient=%s\n"
+                                   (or (bound-and-true-p seq-version) "builtin")
+                                   (or (bound-and-true-p transient-version) "builtin"))))'
+
+      - name: Prepare real CIDER JVM runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          runtime="$RUNNER_TEMP/runtime-probe"
+          mkdir -p "$runtime"
+          cat > "$runtime/pom.xml" <<'EOF'
+          <project xmlns="http://maven.apache.org/POM/4.0.0"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+            <modelVersion>4.0.0</modelVersion>
+            <groupId>local.emacs-operator</groupId>
+            <artifactId>runtime-probe</artifactId>
+            <version>1.0.0</version>
+            <repositories>
+              <repository>
+                <id>clojars</id>
+                <url>https://repo.clojars.org/</url>
+              </repository>
+            </repositories>
+            <dependencies>
+              <dependency>
+                <groupId>org.clojure</groupId>
+                <artifactId>clojure</artifactId>
+                <version>1.12.0</version>
+              </dependency>
+              <dependency>
+                <groupId>nrepl</groupId>
+                <artifactId>nrepl</artifactId>
+                <version>1.7.0</version>
+              </dependency>
+              <dependency>
+                <groupId>cider</groupId>
+                <artifactId>cider-nrepl</artifactId>
+                <version>0.62.2</version>
+              </dependency>
+            </dependencies>
+          </project>
+          EOF
+
+          mvn -B -q -f "$runtime/pom.xml" dependency:build-classpath \
+            -Dmdep.outputFile="$runtime/cider-classpath.txt"
+          cp="$(cat "$runtime/cider-classpath.txt")"
+          test -n "$cp"
+
+          for jar in clojure-1.12.0.jar nrepl-1.7.0.jar cider-nrepl-0.62.2.jar; do
+            tr ':' '\n' < "$runtime/cider-classpath.txt" | grep -E "/$jar$" >/dev/null
+          done
+
+          : > "$runtime/cider-jars.sha256"
+          while IFS= read -r jar; do
+            test -f "$jar"
+            sha256sum "$jar" >> "$runtime/cider-jars.sha256"
+          done < <(tr ':' '\n' < "$runtime/cider-classpath.txt")
+          sort -o "$runtime/cider-jars.sha256" "$runtime/cider-jars.sha256"
+
+          echo "RUNTIME_PROBE_DIR=$runtime" >> "$GITHUB_ENV"
+          echo "CIDER_CLASSPATH_FILE=$runtime/cider-classpath.txt" >> "$GITHUB_ENV"
+
+      - name: Provision pinned private SBCL
+        shell: bash
+        run: |
+          set -euo pipefail
+          runtime="$RUNNER_TEMP/runtime-probe"
+          archive="$runtime/sbcl-2.6.8-x86-64-linux-binary.tar.bz2"
+          url="https://downloads.sourceforge.net/project/sbcl/sbcl/2.6.8/sbcl-2.6.8-x86-64-linux-binary.tar.bz2"
+          expected="5391773774b94554a015db9f992370d06937fb6f0cdb0b2142281aebef9e96c1"
+
+          curl --fail --location --retry 5 --retry-all-errors --output "$archive" "$url"
+          echo "$expected  $archive" | sha256sum --check --strict
+
+          unpack="$runtime/sbcl-unpack"
+          prefix="$runtime/sbcl"
+          mkdir -p "$unpack" "$prefix"
+          tar -xjf "$archive" -C "$unpack"
+          src="$(find "$unpack" -mindepth 1 -maxdepth 1 -type d | head -1)"
+          test -n "$src"
+          (
+            cd "$src"
+            sh install.sh --prefix="$prefix"
+          )
+          test -x "$prefix/bin/sbcl"
+          SBCL_HOME="$prefix/lib/sbcl" "$prefix/bin/sbcl" --version | tee "$runtime/sbcl-version.txt"
+
+          echo "SBCL_BIN=$prefix/bin/sbcl" >> "$GITHUB_ENV"
+          echo "SBCL_HOME=$prefix/lib/sbcl" >> "$GITHUB_ENV"
+
+      - name: Start real nREPL and Slynk
+        shell: bash
+        run: |
+          set -euo pipefail
+          runtime="$RUNTIME_PROBE_DIR"
+          cp="$(cat "$CIDER_CLASSPATH_FILE")"
+
+          nohup java -cp "$cp" clojure.main -m nrepl.cmdline \
+            --bind 127.0.0.1 \
+            --port 7888 \
+            --middleware '[cider.nrepl/cider-middleware]' \
+            > "$runtime/nrepl.log" 2>&1 &
+          echo $! > "$runtime/nrepl.pid"
+
+          cat > "$runtime/start-slynk.lisp" <<EOF
+          (load "$SLY_ROOT/slynk/slynk-loader.lisp")
+          (slynk-loader:init)
+          (slynk:create-server :port 4005 :interface "127.0.0.1" :dont-close t)
+          (loop (sleep 60))
+          EOF
+
+          nohup env SBCL_HOME="$SBCL_HOME" "$SBCL_BIN" \
+            --noinform --disable-debugger --load "$runtime/start-slynk.lisp" \
+            > "$runtime/slynk.log" 2>&1 &
+          echo $! > "$runtime/slynk.pid"
+
+          python3 - <<'PY'
+          import os, socket, time, pathlib, sys
+          runtime = pathlib.Path(os.environ["RUNTIME_PROBE_DIR"])
+          for name,port in [("nREPL",7888),("Slynk",4005)]:
+              deadline=time.time()+30
+              while time.time()<deadline:
+                  try:
+                      with socket.create_connection(("127.0.0.1",port),timeout=.5):
+                          print(f"{name} listening on 127.0.0.1:{port}")
+                          break
+                  except OSError:
+                      time.sleep(.2)
+              else:
+                  for log in ["nrepl.log","slynk.log"]:
+                      p=runtime/log
+                      if p.exists():
+                          print(f"--- {log} ---")
+                          print(p.read_text(errors="replace"))
+                  sys.exit(f"{name} failed to listen on {port}")
+          PY
+
+      - name: Run GUI Emacs package and REPL probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          runtime="$RUNTIME_PROBE_DIR"
+          export RUNTIME_PROBE_JSON="$runtime/runtime-probe.json"
+
+          timeout 150s dbus-run-session -- xvfb-run -a \
+            emacs -Q \
+              -L "$PAREDIT_ROOT" \
+              -L "$CLOJURE_MODE_ROOT" \
+              -L "$COMPAT_ROOT" \
+              -L "$PARSECLJ_ROOT" \
+              -L "$PARSEEDN_ROOT" \
+              -L "$QUEUE_ROOT" \
+              -L "$SPINNER_ROOT" \
+              -L "$SESMAN_ROOT" \
+              -L "$CIDER_ROOT/lisp" \
+              -L "$SLY_ROOT" \
+              -l "$GITHUB_WORKSPACE/.github/ci/locked-runtime-probe.el" \
+              --eval '(kill-emacs 0)'
+
+          cat "$runtime/runtime-probe.json"
+
+      - name: Upload runtime probe evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: locked-runtime-probe-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/runtime-probe/
+          if-no-files-found: warn
+          retention-days: 14
