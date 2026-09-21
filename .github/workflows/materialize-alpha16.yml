@@ -43,43 +43,57 @@ jobs:
             fi
           done
 
-      - name: Verify staged source chunks
+      - name: Verify staged source layout
         shell: bash
         run: |
           set -euo pipefail
-          cd .bootstrap/runtime-sync-source
-          cat > SHA256SUMS.expected <<'SUMS'
-          be914c3696be3271748e1bd97c961c360bdfba9166973c83851093c2e333dca3  part-000.b64
-          556c5ea6514e9b8f463b5f09fba5f8511758cc1f5719c850bb7757e89b46bee2  part-001.b64
-          f0522157e2223725b03c0c6d8f08f323f03ba8af4ad7738d123f9437044605ff  part-002.b64
-          fc5a0fe1de42488cfa52262a414bc027dd69625b038795f11a97e52bb0ef130e  part-003.b64
-          74099e316b749f90c0fe235d3584eece64bb8054a4fca557667d1bf370e6209e  part-004.b64
-          dffd949828564d2695cdf07c6f750c9b3a93e9d761e31b1f587d11f914f3dfc8  part-005.b64
-          7833331870c019cbd9d77e775d183a6fc0b64675243bac9660a81a961317fd87  part-006.b64
-          27b6c95b9c44352ddf1bb3c240ef83e6de8275c17046e6e7070eb57e2ef89dd3  part-007.b64
-          bd075aa085f96e30779bc1fa9ec02e8914ac5143c455eeaa8cdc7321c7e9f35e  part-008.b64
-          1b1fe1fe66a9d06cada3a8d1e4930157d8f267a379608e071ec9c1944bbd9696  part-009.b64
-          5790abee39b12e6695631b44075883c8f88ece53786e4963e80bee7ffd4a98a4  part-010.b64
-          e7fb18523c370e16ec99d30ec6069626ee109dac0e42fbcc252cfc7a36a4bc74  part-011.b64
-          7afd16ba21a1d272608d61319894665ee59900f285337179a9d6d6ba459fb7a0  part-012.b64
-          SUMS
-          sha256sum -c SHA256SUMS.expected
-          test "$(find . -maxdepth 1 -name 'part-*.b64' -type f | wc -l)" -eq 13
+          dir=".bootstrap/runtime-sync-source"
+          test -f "$dir/READY"
+
+          parts=("$dir"/part-000.b64 "$dir"/part-001.b64 "$dir"/part-002.b64)
+          tails=("$dir"/tail-*.b64)
+
+          test "${#parts[@]}" -eq 3
+          test "${#tails[@]}" -eq 46
+
+          for part in "${parts[@]}"; do
+            test "$(wc -c < "$part")" -eq 16000
+          done
+
+          for i in $(seq -w 0 44); do
+            test -f "$dir/tail-${i}.b64"
+            test "$(wc -c < "$dir/tail-${i}.b64")" -eq 8000
+          done
+
+          test -f "$dir/tail-045.b64"
+          test "$(wc -c < "$dir/tail-045.b64")" -eq 1144
+
+          staged_bytes="$(
+            {
+              printf '%s\n' "${parts[@]}"
+              printf '%s\n' "${tails[@]}"
+            } | xargs wc -c | tail -1 | awk '{print $1}'
+          )"
+          test "$staged_bytes" -eq 409144
+          printf 'staged_base64_bytes=%s\n' "$staged_bytes"
 
       - name: Reconstruct clean alpha16 source archive
         shell: bash
         run: |
           set -euo pipefail
+          dir=".bootstrap/runtime-sync-source"
           encoded="$RUNNER_TEMP/emacs-operator-alpha16-clean.tar.xz.b64"
           archive="$RUNNER_TEMP/emacs-operator-alpha16-clean.tar.xz"
-          : > "$encoded"
-          for part in .bootstrap/runtime-sync-source/part-*.b64; do
-            cat "$part" >> "$encoded"
-          done
+
+          cat             "$dir/part-000.b64"             "$dir/part-001.b64"             "$dir/part-002.b64"             "$dir"/tail-*.b64             > "$encoded"
+
+          test "$(wc -c < "$encoded")" -eq 409144
           base64 --decode "$encoded" > "$archive"
-          echo "e81474e3bcc18567adbced268d43f9ea033fb03da4a72b622da9d6419534726f  $archive" | sha256sum -c --strict
+
+          echo "e81474e3bcc18567adbced268d43f9ea033fb03da4a72b622da9d6419534726f  $archive"             | sha256sum -c --strict
           xz --test "$archive"
           tar -tJf "$archive" >/dev/null
+
           mkdir -p "$RUNNER_TEMP/source"
           tar -xJf "$archive" -C "$RUNNER_TEMP/source"
           test "$(find "$RUNNER_TEMP/source" -type f | wc -l)" -eq 366
@@ -92,7 +106,7 @@ jobs:
           if [[ -d "$RUNNER_TEMP/repo-native" ]]; then
             cp -a "$RUNNER_TEMP/repo-native/." "$RUNNER_TEMP/source/"
           fi
-          rm -rf "$RUNNER_TEMP/source/.bootstrap" "$RUNNER_TEMP/source/node_modules" "$RUNNER_TEMP/source/dist"
+          rm -rf             "$RUNNER_TEMP/source/.bootstrap"             "$RUNNER_TEMP/source/node_modules"             "$RUNNER_TEMP/source/dist"
           rm -f "$RUNNER_TEMP/source/package-lock.json"
 
       - name: Validate recovered source
@@ -102,12 +116,15 @@ jobs:
           cd "$RUNNER_TEMP/source"
           node scripts/sync-version.mjs --check
           python3 scripts/check-elisp-structure.py
-          npm install --no-save --package-lock=false --ignore-scripts typescript@5.9.2
+
+          npm install             --no-save             --package-lock=false             --ignore-scripts             typescript@5.9.2
+
           npm run typecheck
           npm run test:ts
           npm run test:alpha10-intelligence
           npm run test:agent-experiment
           npm run linux-host:test
+
           rm -rf node_modules dist
           rm -f package-lock.json
 
@@ -147,6 +164,7 @@ jobs:
           git add -A
           git diff --cached --check
           test -f package.json
+          test -f .github/workflows/ci.yml
           test ! -e .bootstrap
           git commit -m "feat: materialize canonical Emacs Operator alpha.16 source"
           git push origin HEAD:codex/runtime-sync-20260921
