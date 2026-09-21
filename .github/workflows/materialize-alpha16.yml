@@ -28,12 +28,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/repo-native"
+          mkdir -p "$RUNNER_TEMP/repo-native/.github"
+          cp -a .github/workflows "$RUNNER_TEMP/repo-native/.github/workflows"
+
           files=(
             .github/ci/linux-package-acceptance.el
-            .github/workflows/build-release-artifacts.yml
-            .github/workflows/linux-package-runtime-experimental.yml
-            .github/workflows/remote-publication-verification.yml
             docs/github-publication-and-artifacts.md
           )
           for file in "${files[@]}"; do
@@ -104,6 +103,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          rm -rf "$RUNNER_TEMP/source/.github/workflows"
           if [[ -d "$RUNNER_TEMP/repo-native" ]]; then
             cp -a "$RUNNER_TEMP/repo-native/." "$RUNNER_TEMP/source/"
           fi
@@ -165,7 +165,7 @@ jobs:
           git add -A
           git diff --cached --stat
           test -f package.json
-          test -f .github/workflows/ci.yml
           test ! -e .bootstrap
+          git diff --cached --quiet -- .github/workflows
           git commit -m "feat: materialize canonical Emacs Operator alpha.16 source"
           git push origin HEAD:codex/runtime-sync-20260921
