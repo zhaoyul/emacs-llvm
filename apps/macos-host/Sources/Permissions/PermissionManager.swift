@@ -7,7 +7,10 @@ import CoreGraphics
 struct PermissionManager: Sendable {
     func accessibilityTrusted(prompt: Bool = false) -> Bool {
         if prompt {
-            let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+            // kAXTrustedCheckOptionPrompt is imported as shared mutable
+            // CoreFoundation state under Swift 6 strict concurrency. The
+            // underlying Accessibility option key is a stable API string.
+            let options = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
             return AXIsProcessTrustedWithOptions(options)
         }
         return AXIsProcessTrusted()
