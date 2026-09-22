@@ -71,10 +71,14 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 cd "$ROOT"
+# The dedicated acceptance instance and native gates need a graphical (NS)
+# build; a terminal-only `emacs' on PATH (e.g. Homebrew's `emacs' formula)
+# would exit immediately when started in the background.
+export EMACS_OPERATOR_REQUIRE_GUI_EMACS=1
 # shellcheck source=resolve-emacs.sh
 source "$ROOT/scripts/resolve-emacs.sh"
 if ! resolve_emacs_bin; then
-  echo "GNU Emacs 29+ was not found. Set EMACS_OPERATOR_EMACS_BIN or install Emacs.app." >&2
+  echo "A graphical GNU Emacs 29+ was not found (terminal-only builds are skipped). Set EMACS_OPERATOR_EMACS_BIN to e.g. /Applications/Emacs.app/Contents/MacOS/Emacs." >&2
   exit 127
 fi
 export EMACS_OPERATOR_EMACS_BIN="$EMACS_OPERATOR_RESOLVED_EMACS"
@@ -124,7 +128,8 @@ if [[ "$USE_EXISTING" != "1" ]]; then
   owned_emacs_pid="$!"
 
   found=0
-  for _ in {1..100}; do
+  # Up to 30 s: the first start may native-compile emacs-operator.
+  for _ in $(seq 1 300); do
     records=("$owned_runtime"/instance-*.json)
     if [[ -f "${records[0]}" ]]; then
       found=1
@@ -137,7 +142,7 @@ if [[ "$USE_EXISTING" != "1" ]]; then
     sleep 0.1
   done
   if [[ "$found" != "1" ]]; then
-    echo "Timed out waiting for dedicated Emacs bridge record." >&2
+    echo "Timed out after 30s waiting for dedicated Emacs bridge record. See $REPORT_DIR/dedicated-emacs.log" >&2
     exit 1
   fi
 else

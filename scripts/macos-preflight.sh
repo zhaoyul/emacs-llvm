@@ -27,8 +27,10 @@ done
 
 # shellcheck source=resolve-emacs.sh
 source "$ROOT/scripts/resolve-emacs.sh"
-if resolve_emacs_bin; then
-  pass "GNU Emacs ${EMACS_OPERATOR_RESOLVED_EMACS_MAJOR} is available: $EMACS_OPERATOR_RESOLVED_EMACS"
+if EMACS_OPERATOR_REQUIRE_GUI_EMACS=1 resolve_emacs_bin; then
+  pass "Graphical GNU Emacs ${EMACS_OPERATOR_RESOLVED_EMACS_MAJOR} is available: $EMACS_OPERATOR_RESOLVED_EMACS"
+elif resolve_emacs_bin; then
+  fail "Only a terminal-only GNU Emacs was found ($EMACS_OPERATOR_RESOLVED_EMACS); native acceptance needs a graphical build such as /Applications/Emacs.app (set EMACS_OPERATOR_EMACS_BIN)."
 else
   fail "GNU Emacs 29+ was not found on PATH or in a standard Emacs.app location (set EMACS_OPERATOR_EMACS_BIN)."
 fi

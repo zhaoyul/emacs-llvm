@@ -48,11 +48,12 @@ fi
 cd "$REPO"
 echo "HEAD:  $(git log --oneline -1)"
 
-say "Resolving GNU Emacs 29+"
+say "Resolving graphical GNU Emacs 29+"
 # shellcheck source=/dev/null
 ROOT="$REPO"
 source scripts/resolve-emacs.sh
-resolve_emacs_bin || die "GNU Emacs 29+ not found. Install Emacs.app or set EMACS_OPERATOR_EMACS_BIN."
+EMACS_OPERATOR_REQUIRE_GUI_EMACS=1 resolve_emacs_bin \
+  || die "No graphical GNU Emacs 29+ found (terminal-only builds are skipped). Install Emacs.app or set EMACS_OPERATOR_EMACS_BIN."
 echo "emacs: $EMACS_OPERATOR_RESOLVED_EMACS (major $EMACS_OPERATOR_RESOLVED_EMACS_MAJOR)"
 export EMACS_OPERATOR_EMACS_BIN="$EMACS_OPERATOR_RESOLVED_EMACS"
 

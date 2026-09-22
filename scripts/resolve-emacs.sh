@@ -28,12 +28,25 @@ _emacs_operator_version_of() {
   return 1
 }
 
+# A GUI-capable build defines the window-system primitives even under --batch:
+# `ns-list-colors' (macOS NS), `x-display-list' (X11/GTK/PGTK).  Terminal-only
+# builds (e.g. Homebrew's `emacs' formula, emacs-nox) define neither.
+_emacs_operator_has_gui() {
+  local candidate="$1" output="" timeout_bin=""
+  if command -v timeout >/dev/null 2>&1; then timeout_bin="timeout 10"; fi
+  output="$($timeout_bin "$candidate" -Q --batch --eval '(princ (if (or (fboundp (quote ns-list-colors)) (fboundp (quote x-display-list))) "gui" "tty"))' 2>/dev/null || true)"
+  [[ "$output" == "gui" ]]
+}
+
 _emacs_operator_accept_candidate() {
   local candidate="$1"
   [[ -n "$candidate" && -x "$candidate" && ! -d "$candidate" ]] || return 1
   local version=""
   version="$(_emacs_operator_version_of "$candidate")" || return 1
   (( version >= 29 )) || return 1
+  if [[ "${EMACS_OPERATOR_REQUIRE_GUI_EMACS:-0}" == "1" ]]; then
+    _emacs_operator_has_gui "$candidate" || return 1
+  fi
   EMACS_OPERATOR_RESOLVED_EMACS="$(cd "$(dirname "$candidate")" && pwd -P)/$(basename "$candidate")"
   EMACS_OPERATOR_RESOLVED_EMACS_MAJOR="$version"
   export EMACS_OPERATOR_RESOLVED_EMACS EMACS_OPERATOR_RESOLVED_EMACS_MAJOR
