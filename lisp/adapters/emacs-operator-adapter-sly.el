@@ -10,7 +10,7 @@
   (let ((connection (emacs-operator-sly--connection)))
     (cond ((not connection) '(nil . "SLY has no active connection."))
           ((and (processp connection) (not (process-live-p connection))) '(nil . "The SLY connection process is not alive."))
-          ((not (or (fboundp 'sly-eval-and-grab-output) (fboundp 'sly-eval))) '(nil . "This SLY version does not expose a supported synchronous evaluation API."))
+          ((not (fboundp 'sly-eval)) '(nil . "This SLY version does not expose the synchronous `sly-eval' API."))
           (t '(t . nil)))))
 (defun emacs-operator-sly-observe (_context)
   (let* ((connection (emacs-operator-sly--connection)) (package (emacs-operator-sly--package)) (ready (emacs-operator-sly--ready-state)))
@@ -31,6 +31,41 @@
          ("channel" . "repl"))))
       ("requires_connection" . t)
       ("result_contract" . ("stdout" "stderr" "value" "condition" "backtrace_handle")))))
+;; Slynk evaluates the request inside `handler-case', so a Lisp error is
+;; returned as data instead of entering SLY's interactive debugger (which
+;; would leave the synchronous request waiting until the adapter timeout).
+;; `slynk:eval-and-grab-output' replies with (STDOUT VALUES-STRING).  Its echo
+;; formatting decorates numbers ("42 (6 bits, #x2A, ...)") through
+;; `slynk::*echo-number-alist*'; bind that to nil so the structured result
+;; carries the plain printed value, only for this request.
+(defun emacs-operator-sly--request-form (source)
+  "Return the Slynk request form that evaluates SOURCE without the debugger."
+  `(cl:handler-case
+       (cl:let ((slynk::*echo-number-alist* cl:nil))
+         (cl:list :ok (slynk:eval-and-grab-output ,source)))
+     (cl:error (condition)
+       (cl:list :error
+                (cl:prin1-to-string (cl:type-of condition))
+                (cl:princ-to-string condition)))))
+
+(defun emacs-operator-sly--reply-result (reply package metadata)
+  "Convert a Slynk REPLY from `emacs-operator-sly--request-form' to a result."
+  (pcase reply
+    (`(:ok (,stdout ,values))
+     (emacs-operator-repl-result
+      :stdout (or stdout "") :value values :namespace-or-package package
+      :metadata metadata :completed t))
+    (`(:error ,type ,message)
+     (emacs-operator-repl-result
+      :stderr message :condition type
+      :backtrace-handle (format "sly:%sx" (sxhash-equal (list type message)))
+      :namespace-or-package package :metadata metadata :completed nil))
+    (_
+     (emacs-operator-repl-result
+      :stderr (format "Unexpected Slynk reply: %S" reply)
+      :condition "unexpected_reply"
+      :namespace-or-package package :metadata metadata :completed nil))))
+
 (defun emacs-operator-sly--eval-source (source params)
   (let* ((package (emacs-operator-sly--package))
          (ready (emacs-operator-sly--ready-state))
@@ -40,19 +75,9 @@
     (unless (car ready) (emacs-operator-signal "E_COMMAND_FAILED" (cdr ready)))
     (condition-case err
         (with-timeout (timeout (emacs-operator-repl-timeout-result "SLY" package metadata))
-          (cond
-           ((fboundp 'sly-eval-and-grab-output)
-            (let* ((pair (sly-eval-and-grab-output `(slynk:eval-and-grab-output ,source) package))
-                   (stdout (if (consp pair) (or (car pair) "") ""))
-                   (value (if (consp pair) (cadr pair) pair)))
-              (emacs-operator-repl-result
-               :stdout stdout :value value :namespace-or-package package
-               :metadata metadata :completed t)))
-           ((fboundp 'sly-eval)
-            (let ((value (sly-eval `(slynk:eval-and-grab-output ,source) package)))
-              (emacs-operator-repl-result
-               :value (format "%s" value) :namespace-or-package package
-               :metadata metadata :completed t)))))
+          (emacs-operator-sly--reply-result
+           (sly-eval (emacs-operator-sly--request-form source) package)
+           package metadata))
       (error
        (emacs-operator-repl-result
         :stderr (error-message-string err)

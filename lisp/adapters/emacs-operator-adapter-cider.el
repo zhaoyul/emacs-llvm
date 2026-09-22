@@ -36,8 +36,31 @@
          ("channel" . "semantic"))))
       ("requires_connection" . t)
       ("result_contract" . ("stdout" "stderr" "value" "condition" "backtrace_handle")))))
+;; nREPL responses are `nrepl-dict's: (dict "key1" value1 "key2" value2 ...),
+;; a flat plist that `assoc' cannot read.
 (defun emacs-operator-cider--dict-get (response key)
-  (cond ((hash-table-p response) (or (gethash key response) (gethash (intern key) response))) ((listp response) (or (cdr (assoc key response)) (cdr (assq (intern key) response))))))
+  (cond ((and (fboundp 'nrepl-dict-p) (nrepl-dict-p response)) (nrepl-dict-get response key))
+        ((hash-table-p response) (or (gethash key response) (gethash (intern key) response))) ((listp response) (or (cdr (assoc key response)) (cdr (assq (intern key) response))))))
+(defun emacs-operator-cider--status (response)
+  (let ((status (emacs-operator-cider--dict-get response "status")))
+    (if (listp status) status (list status))))
+
+(defun emacs-operator-cider--status-p (response name)
+  (member name (emacs-operator-cider--status response)))
+
+;; CIDER's interactive commands evaluate a buffer's `ns' form before the first
+;; evaluation in it (`cider-auto-track-ns-form-changes').  A raw synchronous
+;; request does not, so nREPL answers `namespace-not-found' with no value.
+;; Mirror CIDER once: evaluate this buffer's own ns form, then retry.
+(defun emacs-operator-cider--bootstrap-namespace (connection)
+  "Evaluate the current buffer's ns form on CONNECTION; return non-nil on success."
+  (let ((ns-form (and (fboundp 'cider-ns-form) (cider-ns-form))))
+    (when (and (stringp ns-form) (not (string-empty-p ns-form)))
+      (let ((response (cider-nrepl-sync-request:eval ns-form connection)))
+        (not (or (emacs-operator-cider--dict-get response "ex")
+                 (emacs-operator-cider--status-p response "error")
+                 (emacs-operator-cider--status-p response "eval-error")))))))
+
 (defun emacs-operator-cider--eval-source (source params)
   (let* ((ready (emacs-operator-cider--ready-state))
          (namespace (emacs-operator-cider--namespace))
@@ -48,17 +71,27 @@
     (unless (car ready) (emacs-operator-signal "E_COMMAND_FAILED" (cdr ready)))
     (condition-case err
         (with-timeout (timeout (emacs-operator-repl-timeout-result "CIDER" namespace metadata))
-          (let* ((response (cider-nrepl-sync-request:eval source namespace connection))
-                 (value (emacs-operator-cider--dict-get response "value"))
-                 (out (emacs-operator-cider--dict-get response "out"))
-                 (stderr (emacs-operator-cider--dict-get response "err"))
-                 (condition (or (emacs-operator-cider--dict-get response "ex")
-                                (emacs-operator-cider--dict-get response "root-ex")))
-                 (stack (emacs-operator-cider--dict-get response "stacktrace")))
-            (emacs-operator-repl-result
-             :stdout out :stderr stderr :value value :condition condition
-             :backtrace-handle (and stack (format "cider:%sx" (sxhash-equal stack)))
-             :namespace-or-package namespace :metadata metadata :completed (not condition))))
+          (let ((response (cider-nrepl-sync-request:eval source connection namespace)))
+            (when (and namespace
+                       (emacs-operator-cider--status-p response "namespace-not-found")
+                       (emacs-operator-cider--bootstrap-namespace connection))
+              (setq metadata (append metadata '(("ns_form_evaluated" . t))))
+              (setq response (cider-nrepl-sync-request:eval source connection namespace)))
+            (let* ((value (emacs-operator-cider--dict-get response "value"))
+                   (out (emacs-operator-cider--dict-get response "out"))
+                   (stderr (emacs-operator-cider--dict-get response "err"))
+                   (condition (or (emacs-operator-cider--dict-get response "ex")
+                                  (emacs-operator-cider--dict-get response "root-ex")
+                                  (and (emacs-operator-cider--status-p response "namespace-not-found")
+                                       "namespace-not-found")
+                                  (and (or (emacs-operator-cider--status-p response "error")
+                                           (emacs-operator-cider--status-p response "eval-error"))
+                                       "nrepl-error")))
+                   (stack (emacs-operator-cider--dict-get response "stacktrace")))
+              (emacs-operator-repl-result
+               :stdout out :stderr stderr :value value :condition condition
+               :backtrace-handle (and stack (format "cider:%sx" (sxhash-equal stack)))
+               :namespace-or-package namespace :metadata metadata :completed (not condition)))))
       (error
        (emacs-operator-repl-result
         :stderr (error-message-string err)

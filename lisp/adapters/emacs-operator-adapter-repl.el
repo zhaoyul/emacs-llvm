@@ -50,14 +50,10 @@ for evaluation and for verification-ticket target identity."
     ("eval_defun"
      (save-excursion
        (condition-case err
-           (let (start end)
-             (beginning-of-defun)
-             (setq start (point))
-             (end-of-defun)
-             (setq end (point))
-             (unless (< start end)
+           (let ((bounds (emacs-operator-repl--enclosing-defun-bounds (point))))
+             (unless bounds
                (emacs-operator-signal "E_COMMAND_FAILED" "No enclosing defun could be resolved."))
-             (vector start end))
+             bounds)
          (emacs-operator-error (signal (car err) (cdr err)))
          (error
           (emacs-operator-signal "E_COMMAND_FAILED"
@@ -72,6 +68,31 @@ for evaluation and for verification-ticket target identity."
      (emacs-operator-signal "E_INVALID_ARGUMENT"
                             "Unsupported structured evaluation operation."
                             `(("operation" . ,operation))))))
+
+;; `beginning-of-defun' moves to the *previous* top-level form when point is
+;; already at the start of a defun, which is exactly where structured
+;; navigation (`beginning_of_defun') leaves it.  Resolve forward first, the
+;; way `eval-defun' does, and only accept a form that actually contains ORIG.
+(defun emacs-operator-repl--enclosing-defun-bounds (orig)
+  "Return [START END] of the top-level form containing ORIG, or nil."
+  (let ((contains (lambda (start end)
+                    (and start end (< start end) (<= start orig) (<= orig end)))))
+    (or (save-excursion
+          (goto-char orig)
+          (let (start end)
+            (end-of-defun)
+            (setq end (point))
+            (beginning-of-defun)
+            (setq start (point))
+            (when (funcall contains start end) (vector start end))))
+        (save-excursion
+          (goto-char orig)
+          (let (start end)
+            (beginning-of-defun)
+            (setq start (point))
+            (end-of-defun)
+            (setq end (point))
+            (when (funcall contains start end) (vector start end)))))))
 
 (defun emacs-operator-repl-source-from-bounds (bounds operation)
   "Return bounded source for BOUNDS and OPERATION."
