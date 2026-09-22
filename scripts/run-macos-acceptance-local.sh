@@ -43,10 +43,8 @@ if [[ ! -d "$REPO/.git" ]]; then
   else
     git clone -q https://github.com/zhaoyul/emacs-llvm "$REPO" || die "git clone failed."
   fi
-elif [[ -f "$HERE/emacs-llvm.bundle" ]]; then
-  git -C "$REPO" fetch -q "$HERE/emacs-llvm.bundle" "$BRANCH:refs/remotes/bundle/$BRANCH" \
-    && git -C "$REPO" checkout -q -B "$BRANCH" "refs/remotes/bundle/$BRANCH" || die "Updating from bundle failed."
 fi
+# An existing checkout is used as-is (it may carry newer local commits than the bundle).
 cd "$REPO"
 echo "HEAD:  $(git log --oneline -1)"
 
