@@ -71,7 +71,15 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 cd "$ROOT"
+# shellcheck source=resolve-emacs.sh
+source "$ROOT/scripts/resolve-emacs.sh"
+if ! resolve_emacs_bin; then
+  echo "GNU Emacs 29+ was not found. Set EMACS_OPERATOR_EMACS_BIN or install Emacs.app." >&2
+  exit 127
+fi
+export EMACS_OPERATOR_EMACS_BIN="$EMACS_OPERATOR_RESOLVED_EMACS"
 echo "== Emacs Operator macOS acceptance =="
+echo "Emacs: $EMACS_OPERATOR_RESOLVED_EMACS (major $EMACS_OPERATOR_RESOLVED_EMACS_MAJOR)"
 echo "Reports: $REPORT_DIR"
 
 CURRENT_STAGE="macos_preflight"
@@ -107,7 +115,7 @@ if [[ "$USE_EXISTING" != "1" ]]; then
   owned_runtime="$(mktemp -d "${TMPDIR:-/tmp}/emacs-operator-acceptance.XXXXXX")"
   export EMACS_OPERATOR_RUNTIME_DIR="$owned_runtime"
   echo "Starting dedicated graphical Emacs acceptance instance in $owned_runtime"
-  emacs -Q \
+  "$EMACS_OPERATOR_RESOLVED_EMACS" -Q \
     -L "$ROOT/lisp" \
     -L "$ROOT/lisp/adapters" \
     -l emacs-operator \

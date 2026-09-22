@@ -83,5 +83,17 @@ resolve_emacs_bin() {
     candidate="$(command -v emacs-nox)"
     if _emacs_operator_accept_candidate "$candidate"; then return 0; fi
   fi
+  # macOS GUI builds (emacsformacosx, emacs-plus, emacs-mac) are commonly
+  # installed only as an app bundle and are not on PATH.
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    for candidate in \
+      "/Applications/Emacs.app/Contents/MacOS/Emacs" \
+      "$HOME/Applications/Emacs.app/Contents/MacOS/Emacs" \
+      "/opt/homebrew/opt/emacs-plus/Emacs.app/Contents/MacOS/Emacs" \
+      "/opt/homebrew/bin/emacs" \
+      "/usr/local/bin/emacs"; do
+      if _emacs_operator_accept_candidate "$candidate"; then return 0; fi
+    done
+  fi
   return 127
 }

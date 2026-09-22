@@ -17,17 +17,21 @@ warn() { printf 'WARN: %s\n' "$*" >&2; }
 pass() { printf 'PASS: %s\n' "$*"; }
 fail() { printf 'FAIL: %s\n' "$*" >&2; failures=$((failures + 1)); }
 
-for command in node npm swift emacs plutil codesign; do
+for command in node npm swift plutil codesign; do
   if command -v "$command" >/dev/null 2>&1; then
     pass "$command is available: $(command -v "$command")"
   else
-    if [[ "$command" == "emacs" ]]; then
-      fail "GNU Emacs is not on PATH."
-    else
-      fail "$command is not on PATH."
-    fi
+    fail "$command is not on PATH."
   fi
 done
+
+# shellcheck source=resolve-emacs.sh
+source "$ROOT/scripts/resolve-emacs.sh"
+if resolve_emacs_bin; then
+  pass "GNU Emacs ${EMACS_OPERATOR_RESOLVED_EMACS_MAJOR} is available: $EMACS_OPERATOR_RESOLVED_EMACS"
+else
+  fail "GNU Emacs 29+ was not found on PATH or in a standard Emacs.app location (set EMACS_OPERATOR_EMACS_BIN)."
+fi
 
 if command -v node >/dev/null 2>&1; then
   node_major="$(node -p 'process.versions.node.split(".")[0]')"
