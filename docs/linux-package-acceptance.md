@@ -65,6 +65,21 @@ No fake nREPL server is used.
 
 The SLY gate mirrors the CIDER contract in a Common Lisp buffer with a real SLY/Slynk connection. No fake Slynk server is used.
 
+## Pinned package runtime
+
+`npm run runtime:packages:start [RUNTIME_DIR]` prepares everything the three gates need without system Emacs packages:
+
+1. acquires every entry of `scripts/package-runtime/sources.lock.json` (Paredit, CIDER 2.0.1 and its Emacs dependency closure, SLY) at its exact commit;
+2. fetches `scripts/package-runtime/jvm.lock.json` (Clojure 1.12.5, nREPL 1.7.0, cider-nrepl 0.62.2 and its closure) from Maven Central/Clojars, verifying each jar's SHA-256, re-verifying cached jars;
+3. starts nREPL with `cider.nrepl/cider-middleware` and Slynk (from the pinned SLY tree) on `127.0.0.1`, waiting for the ports rather than sleeping;
+4. writes `RUNTIME_DIR/package-runtime.env` with `EMACS_OPERATOR_LINUX_EMACS_EXTRA_LOAD_PATHS`, the setup file and ports.
+
+`npm run runtime:packages:stop [RUNTIME_DIR]` stops both (with a KILL fallback, since Slynk traps SIGTERM).
+
+cider-nrepl is required, not optional: CIDER 2.0.1 sends `cider/init-debugger` on connect and fails the connection initialisation against a plain nREPL.
+
+The CI setup file (`.github/ci/linux-package-acceptance.el`) retries the connections until both runtimes are reachable, links the CIDER session to the system temporary directory (where the runner writes its fixture workspace; a user's project link plays this role normally), and keeps the acceptance buffer selected after CIDER/SLY pop their REPLs, because the later native X11 gate types into the focused window.
+
 ## Dedicated package-enabled Linux acceptance
 
 The full Linux runner normally starts an isolated `emacs -Q`. To add package dependencies without loading an ordinary user init file:

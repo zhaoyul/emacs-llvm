@@ -16,17 +16,12 @@ The default rule is: prefer semantic operations for deterministic intent, use `i
 
 Linux remains the authoritative implementation platform. Alpha.16 makes acceptance reproducible when GNU Emacs is not preinstalled: it can resolve a private runtime, lock and provision a local Debian package set, and acquire Paredit/CIDER/SLY source trees at exact pinned commits.
 
-Current alpha.16 evidence in this session:
+Current alpha.16 evidence (GNU Emacs 29.3, Xvfb, 2026-09-22):
 
-- TypeScript: 93/93 PASS;
-- Agent experiment: 18/18 PASS;
-- Refactor intelligence: 29/29 PASS;
-- Linux Host: 11/11 PASS;
-- Swift portable: 5/5 PASS;
-- X11/XTEST native acceptance: PASS;
-- Linux reliability: 8/8 PASS;
-- GNU Emacs ERT: NOT_RUN because this session currently has no GNU Emacs 29+ executable;
-- Paredit/CIDER/SLY package runtime: NOT_RUN, never inferred from capability probes.
+- TypeScript: 93/93 PASS; agent experiment, refactor intelligence, Linux Host, resolver, provisioner and source/JVM acquisition tests PASS;
+- GNU Emacs ERT: 78/78 PASS (paredit case included when the pinned package load path is present);
+- hard `accept:linux` with `REQUIRE_EMACS`, `REQUIRE_GUI_EMACS`, `REQUIRE_PAREDIT`, `REQUIRE_CIDER`, `REQUIRE_SLY`: PASS — semantic runtime, workflows, X11/XTEST real-Emacs input, reliability 8/8, multi-Emacs routing, and all three package gates;
+- macOS: in progress on a real Mac (see STATUS.md).
 
 The release gate supports segmented evidence so a separately completed `accept:linux` report can be reused without rerunning a long desktop suite. See `docs/linux-private-emacs-runtime.md`.
 
@@ -96,12 +91,20 @@ adapters       active keymaps          |
    +-------- GNU Emacs runtime ----------+
 ```
 
+## Reproducible package runtime
+
+```bash
+npm run runtime:packages:start          # pinned sources + SHA-256-pinned JVM jars, starts nREPL/Slynk on loopback
+set -a; . .runtime/package-runtime/package-runtime.env; set +a
+EMACS_OPERATOR_LINUX_REQUIRE_EMACS=1 EMACS_OPERATOR_LINUX_REQUIRE_GUI_EMACS=1 \
+EMACS_OPERATOR_LINUX_REQUIRE_PAREDIT=1 EMACS_OPERATOR_LINUX_REQUIRE_CIDER=1 EMACS_OPERATOR_LINUX_REQUIRE_SLY=1 \
+npm run accept:linux
+npm run runtime:packages:stop
+```
+
+Requires `git`, `node` 22+, a JRE (17+) and `sbcl`. The same flow runs in the manual `Linux Package Runtime` GitHub workflow.
+
 ## Remaining acceptance work
 
-Linux core runtime is accepted. The remaining package-specific gates require real external dependencies rather than mocks:
-
-- paredit package installation;
-- CIDER + Clojure + live nREPL;
-- SLY + Common Lisp implementation + live Slynk.
-
-After those Linux gates are available, the same source tree can be exercised on the user's Mac with `npm run accept:macos` for Accessibility, CGEvent, ScreenCaptureKit, foreground restoration, and the same Emacs/package workflows.
+- macOS: rerun `bash scripts/run-macos-acceptance-local.sh` on a real Mac (Accessibility, CGEvent, ScreenCaptureKit, foreground restoration, Emacs/package workflows). The first run stopped at ERT because of a macOS `/bin/bash` 3.2 incompatibility, now fixed.
+- Wayland native input remains unimplemented by design.

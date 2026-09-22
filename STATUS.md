@@ -24,13 +24,27 @@ The current session no longer contains the cached GNU Emacs runtime used by earl
 | Linux X11/XTEST native acceptance | PASS |
 | Linux reliability | PASS, 8/8 |
 | Linux Host install/uninstall smoke | PASS |
-| Full Linux gate without GNU Emacs | PASS, real-Emacs coverage explicitly NOT_RUN |
-| GNU Emacs ERT on current alpha.16 tree | NOT_RUN, GNU Emacs 29+ unavailable in this session |
-| Paredit runtime | NOT_RUN |
-| CIDER/nREPL runtime | NOT_RUN |
-| SLY/Slynk runtime | NOT_RUN |
+| Full hard Linux gate (REQUIRE_EMACS, GUI, PAREDIT, CIDER, SLY) | PASS on GNU Emacs 29.3 / Xvfb |
+| GNU Emacs ERT on current alpha.16 tree | PASS, 78/78 on GNU Emacs 29.3 with pinned package load paths (77 + paredit skip without them) |
+| Paredit runtime | PASS, real `paredit-mode` binding through `internal_keys` |
+| CIDER/nREPL runtime | PASS, CIDER 2.0.1 + cider-nrepl 0.62.2 on Clojure 1.12.5 |
+| SLY/Slynk runtime | PASS, pinned SLY + Slynk on SBCL 2.2.9 |
 | Wayland native backend | NOT_IMPLEMENTED |
-| macOS local native acceptance | PENDING USER MAC |
+| macOS local native acceptance | IN PROGRESS: first real-Mac run passed preflight/TypeScript, stopped at ERT (bash 3.2, fixed); rerun pending |
+
+## 2026-09-22 real-runtime session
+
+GNU Emacs 29.3 was provisioned and the alpha.16 tree was accepted against real runtimes for the first time. Running CIDER and SLY for real exposed adapter defects that stubs had hidden; all are fixed with regression tests (`lisp/test/emacs-operator-repl-adapters-test.el`, 8 tests that fail on the previous adapters):
+
+- `eval_defun` evaluated the *previous* top-level form when point was at a defun start (where `beginning_of_defun` leaves it), for both CIDER and SLY.
+- CIDER adapter: `cider-nrepl-sync-request:eval` arguments were swapped (namespace passed as connection); nREPL `nrepl-dict` replies were read with `assoc`, so value/err/ex/status were always nil; `namespace-not-found`/`eval-error` statuses were reported as success. The adapter now reads nrepl-dicts, treats error statuses as structured failures and, like CIDER's `cider-auto-track-ns-form-changes`, evaluates the buffer's own `ns` form once when the namespace is not loaded (recorded as `ns_form_evaluated`).
+- SLY adapter: relied on a nonexistent `sly-eval-and-grab-output`, stringified Slynk's `(stdout values)` reply, and let Lisp errors enter the interactive debugger until timeout. Requests now run inside Lisp-side `handler-case`, return plain values, and report conditions structurally.
+
+Reproducible package runtime: `sources.lock.json` now pins CIDER's full Emacs dependency closure; `jvm.lock.json` pins Clojure 1.12.5 + nREPL 1.7.0 + cider-nrepl 0.62.2 and its closure by SHA-256; `npm run runtime:packages:start` acquires, verifies and starts nREPL/Slynk and writes an env file for `accept:linux`. The manual `Linux Package Runtime` workflow uses it (it previously could not pass: `npm ci` without a lockfile and apt packages Ubuntu 24.04 does not ship).
+
+macOS: `accept-macos.sh`/preflight now resolve GNU Emacs from `Emacs.app` bundles; `run-ert.sh` works under macOS `/bin/bash` 3.2; stage logs capture stderr; `scripts/run-macos-acceptance-local.sh` runs the whole local flow.
+
+Known non-gating issue: the dedicated GTK Emacs sometimes segfaults while being terminated at the end of `accept:linux` (after all gates have reported).
 
 Earlier alpha.14 evidence demonstrated the same core runtime with GNU Emacs 30.2, including ERT, semantic/internal-key workflows, real Emacs XTEST/capture, and multi-Emacs routing. Alpha.16 does not reuse that historical evidence as if ERT had been rerun on the new tree.
 
