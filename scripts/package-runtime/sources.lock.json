@@ -6,14 +6,18 @@
       "repository": "https://github.com/emacsmirror/paredit.git",
       "commit": "af075775af91f2dbc63b915d762b4aec092946c4",
       "version": "27~git20241103.1.af07577",
-      "entrypoints": ["paredit.el"]
+      "entrypoints": [
+        "paredit.el"
+      ]
     },
     "cider": {
       "kind": "git",
       "repository": "https://github.com/clojure-emacs/cider.git",
       "commit": "c17d11494b35502079caeac2fe7c39173349ce10",
       "version": "2.0.1",
-      "entrypoints": ["lisp/cider.el"],
+      "entrypoints": [
+        "lisp/cider.el"
+      ],
       "emacs_dependencies": {
         "clojure-mode": ">=5.19",
         "compat": ">=30",
@@ -27,6 +31,19 @@
       "runtime_dependencies": {
         "cider-nrepl": "0.62.2",
         "clojure": ">=1.12"
+      },
+      "emacs_dependency_sources": [
+        "clojure-mode",
+        "compat",
+        "parseclj",
+        "parseedn",
+        "queue",
+        "spinner",
+        "sesman"
+      ],
+      "emacs_builtin_dependencies": {
+        "seq": "bundled with GNU Emacs 29+ (2.24)",
+        "transient": "bundled with GNU Emacs 29+ (0.4.3)"
       }
     },
     "sly": {
@@ -34,11 +51,83 @@
       "repository": "https://github.com/joaotavora/sly.git",
       "commit": "3ffa216d0818972f7a7fea38a566a6b570349f3b",
       "version": "master@2026-08-01",
-      "entrypoints": ["sly.el"],
+      "entrypoints": [
+        "sly.el"
+      ],
       "runtime_dependencies": {
         "common-lisp": "SBCL recommended",
         "slynk": "source-tree matched"
       }
+    },
+    "clojure-mode": {
+      "kind": "git",
+      "repository": "https://github.com/clojure-emacs/clojure-mode.git",
+      "commit": "9146525680b29a0c6b72a1126d075b54f8066710",
+      "version": "5.23.0",
+      "entrypoints": [
+        "clojure-mode.el"
+      ],
+      "role": "cider-emacs-dependency"
+    },
+    "compat": {
+      "kind": "git",
+      "repository": "https://github.com/emacs-compat/compat.git",
+      "commit": "cccd41f549fa88031a32deb26253b462021d7e12",
+      "version": "30.1.0.1",
+      "entrypoints": [
+        "compat.el"
+      ],
+      "role": "cider-emacs-dependency"
+    },
+    "parseclj": {
+      "kind": "git",
+      "repository": "https://github.com/clojure-emacs/parseclj.git",
+      "commit": "6af22372e0fe14df882dd300b22b12ba2d7e00b0",
+      "version": "1.1.1",
+      "entrypoints": [
+        "parseclj.el"
+      ],
+      "role": "cider-emacs-dependency"
+    },
+    "parseedn": {
+      "kind": "git",
+      "repository": "https://github.com/clojure-emacs/parseedn.git",
+      "commit": "3407e4530a367b6c2b857dae261cdbb67a440aaa",
+      "version": "1.2.1",
+      "entrypoints": [
+        "parseedn.el"
+      ],
+      "role": "cider-emacs-dependency"
+    },
+    "queue": {
+      "kind": "git",
+      "repository": "https://github.com/emacsmirror/queue.git",
+      "commit": "f986fb68e75bdae951efb9e11a3012ab6bd408ee",
+      "version": "0.2",
+      "entrypoints": [
+        "queue.el"
+      ],
+      "role": "cider-emacs-dependency"
+    },
+    "spinner": {
+      "kind": "git",
+      "repository": "https://github.com/Malabarba/spinner.el.git",
+      "commit": "bca794fa6f6b007292cdac9b0a850a3711986db5",
+      "version": "1.7.4",
+      "entrypoints": [
+        "spinner.el"
+      ],
+      "role": "cider-emacs-dependency"
+    },
+    "sesman": {
+      "kind": "git",
+      "repository": "https://github.com/vspinu/sesman.git",
+      "commit": "3df33018f1c42f09db21cebe39a25b389fe35f02",
+      "version": "0.3.4",
+      "entrypoints": [
+        "sesman.el"
+      ],
+      "role": "cider-emacs-dependency"
     }
   }
 }
