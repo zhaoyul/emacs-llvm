@@ -62,6 +62,9 @@
     "test:source-acquisition": "node --test scripts/package-runtime/acquire-git-source.test.mjs",
     "runtime:emacs": "node scripts/runtime/provision-emacs-runtime.mjs",
     "runtime:source": "node scripts/package-runtime/acquire-git-source.mjs",
-    "accept:alpha16": "node scripts/accept-alpha16.mjs"
+    "accept:alpha16": "node scripts/accept-alpha16.mjs",
+    "test:maven-fetch": "node --test scripts/package-runtime/fetch-maven-artifacts.test.mjs",
+    "runtime:packages:start": "bash scripts/package-runtime/start-package-runtimes.sh",
+    "runtime:packages:stop": "bash scripts/package-runtime/stop-package-runtimes.sh"
   }
 }

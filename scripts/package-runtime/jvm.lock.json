@@ -1,0 +1,78 @@
+{
+  "schema_version": "1.0",
+  "description": "Pinned JVM runtime for the CIDER package gate: Clojure 1.12.5 + nREPL 1.7.0 + cider-nrepl 0.62.2 and its complete runtime closure (resolved from the published POMs, nearest-wins, provided/test/optional scopes excluded).",
+  "main": "clojure.main",
+  "nrepl_middleware": "[cider.nrepl/cider-middleware]",
+  "artifacts": [
+    {
+      "group": "cider",
+      "artifact": "cider-nrepl",
+      "version": "0.62.2",
+      "url": "https://repo.clojars.org/cider/cider-nrepl/0.62.2/cider-nrepl-0.62.2.jar",
+      "sha256": "cf6b0a94390d9eaf3b6618655dd4a0fd672428ba3180bfdb865007cb4f8d2935"
+    },
+    {
+      "group": "cider",
+      "artifact": "orchard",
+      "version": "0.44.0",
+      "url": "https://repo.clojars.org/cider/orchard/0.44.0/orchard-0.44.0.jar",
+      "sha256": "f19bcf3749cd97e347240fd6f26979661e484ded94aee98fd4df6bc19343d502"
+    },
+    {
+      "group": "compliment",
+      "artifact": "compliment",
+      "version": "0.8.0",
+      "url": "https://repo.clojars.org/compliment/compliment/0.8.0/compliment-0.8.0.jar",
+      "sha256": "bdaa45f6a7d7d2165c340d7cbe717967e3a07bc112ae847899c6ac7fadc11eea"
+    },
+    {
+      "group": "io.github.tonsky",
+      "artifact": "clj-reload",
+      "version": "1.0.0",
+      "url": "https://repo.clojars.org/io/github/tonsky/clj-reload/1.0.0/clj-reload-1.0.0.jar",
+      "sha256": "71950c3919876196737a1a045787a41bbd792313fe5919d9d12b64fd88449a31"
+    },
+    {
+      "group": "mx.cider",
+      "artifact": "logjam",
+      "version": "0.3.0",
+      "url": "https://repo.clojars.org/mx/cider/logjam/0.3.0/logjam-0.3.0.jar",
+      "sha256": "8759a84aff868d3ae3c0312297b97aa6c7fb8f93542b7f65964bf9913f4ae09f"
+    },
+    {
+      "group": "nrepl",
+      "artifact": "nrepl",
+      "version": "1.7.0",
+      "url": "https://repo.clojars.org/nrepl/nrepl/1.7.0/nrepl-1.7.0.jar",
+      "sha256": "d07390277190e0a974e1497fd4485005a4964f9f556a50bd530509f48ba65c1b"
+    },
+    {
+      "group": "org.clojure",
+      "artifact": "clojure",
+      "version": "1.12.5",
+      "url": "https://repo1.maven.org/maven2/org/clojure/clojure/1.12.5/clojure-1.12.5.jar",
+      "sha256": "dfdee131460216a84fef22e537bb0d0579965f8f70338d748323dff26f8e5a8b"
+    },
+    {
+      "group": "org.clojure",
+      "artifact": "core.specs.alpha",
+      "version": "0.4.74",
+      "url": "https://repo1.maven.org/maven2/org/clojure/core.specs.alpha/0.4.74/core.specs.alpha-0.4.74.jar",
+      "sha256": "eb73ac08cf49ba840c88ba67beef11336ca554333d9408808d78946e0feb9ddb"
+    },
+    {
+      "group": "org.clojure",
+      "artifact": "spec.alpha",
+      "version": "0.5.238",
+      "url": "https://repo1.maven.org/maven2/org/clojure/spec.alpha/0.5.238/spec.alpha-0.5.238.jar",
+      "sha256": "94cd99b6ea639641f37af4860a643b6ed399ee5a8be5d717cff0b663c8d75077"
+    },
+    {
+      "group": "org.rksm",
+      "artifact": "suitable",
+      "version": "0.6.2",
+      "url": "https://repo.clojars.org/org/rksm/suitable/0.6.2/suitable-0.6.2.jar",
+      "sha256": "a355cdccae76d80d8453eb3d9184034330235986216cdf3e94a7549e05629587"
+    }
+  ]
+}

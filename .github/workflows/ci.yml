@@ -23,6 +23,7 @@ jobs:
       - run: npm run test:resolve-emacs
       - run: npm run test:runtime-provision
       - run: npm run test:source-acquisition
+      - run: npm run test:maven-fetch
       - run: npm run check:elisp-structure
       - run: npm run benchmark:validate
       - run: bash -n scripts/*.sh
