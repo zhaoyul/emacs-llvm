@@ -83,32 +83,32 @@ echo "Emacs: $EMACS_OPERATOR_RESOLVED_EMACS (major $EMACS_OPERATOR_RESOLVED_EMAC
 echo "Reports: $REPORT_DIR"
 
 CURRENT_STAGE="macos_preflight"
-bash ./scripts/macos-preflight.sh | tee "$REPORT_DIR/preflight.log"
+bash ./scripts/macos-preflight.sh 2>&1 | tee "$REPORT_DIR/preflight.log"
 
 CURRENT_STAGE="version_consistency"
-npm run check:version | tee "$REPORT_DIR/version.log"
+npm run check:version 2>&1 | tee "$REPORT_DIR/version.log"
 
 CURRENT_STAGE="elisp_structure"
-npm run check:elisp-structure | tee "$REPORT_DIR/elisp-structure.log"
+npm run check:elisp-structure 2>&1 | tee "$REPORT_DIR/elisp-structure.log"
 
 CURRENT_STAGE="typescript_tests"
-npm run test:ts | tee "$REPORT_DIR/typescript-tests.log"
+npm run test:ts 2>&1 | tee "$REPORT_DIR/typescript-tests.log"
 
 CURRENT_STAGE="benchmark_corpus_validation"
-npm run benchmark:validate | tee "$REPORT_DIR/benchmark-corpus.log"
+npm run benchmark:validate 2>&1 | tee "$REPORT_DIR/benchmark-corpus.log"
 
 CURRENT_STAGE="benchmark_harness_sensitivity"
 EMACS_OPERATOR_BENCHMARK_SENSITIVITY_DIR="$REPORT_DIR/benchmark-sensitivity" \
-  npm run benchmark:sensitivity | tee "$REPORT_DIR/benchmark-sensitivity.log"
+  npm run benchmark:sensitivity 2>&1 | tee "$REPORT_DIR/benchmark-sensitivity.log"
 
 CURRENT_STAGE="emacs_ert"
-npm run test:elisp | tee "$REPORT_DIR/ert.log"
+npm run test:elisp 2>&1 | tee "$REPORT_DIR/ert.log"
 
 CURRENT_STAGE="swift_tests"
 (
   cd apps/macos-host
   swift test
-) | tee "$REPORT_DIR/swift-tests.log"
+) 2>&1 | tee "$REPORT_DIR/swift-tests.log"
 
 CURRENT_STAGE="emacs_runtime_start"
 if [[ "$USE_EXISTING" != "1" ]]; then
@@ -146,18 +146,18 @@ fi
 
 CURRENT_STAGE="emacs_runtime_acceptance"
 EMACS_OPERATOR_ACCEPTANCE_REPORT="$REPORT_DIR/emacs-runtime.json" \
-  npm run accept:emacs-runtime | tee "$REPORT_DIR/emacs-runtime.log"
+  npm run accept:emacs-runtime 2>&1 | tee "$REPORT_DIR/emacs-runtime.log"
 
 # Native acceptance intentionally runs after semantic/internal acceptance. It
 # requires EmacsOperatorHost.app to already have Accessibility and Screen
 # Recording permission. First-run TCC prompts cannot be safely auto-approved.
 CURRENT_STAGE="workflow_acceptance"
 EMACS_OPERATOR_WORKFLOW_ACCEPTANCE_REPORT="$REPORT_DIR/workflow-acceptance.json" \
-  npm run accept:workflows | tee "$REPORT_DIR/workflow-acceptance.log"
+  npm run accept:workflows 2>&1 | tee "$REPORT_DIR/workflow-acceptance.log"
 
 CURRENT_STAGE="macos_native_acceptance"
 EMACS_OPERATOR_NATIVE_ACCEPTANCE_REPORT="$REPORT_DIR/macos-native.json" \
-  npm run accept:macos-native | tee "$REPORT_DIR/macos-native.log"
+  npm run accept:macos-native 2>&1 | tee "$REPORT_DIR/macos-native.log"
 
 CURRENT_STAGE="finalize"
 cat > "$REPORT_DIR/summary.json" <<JSON

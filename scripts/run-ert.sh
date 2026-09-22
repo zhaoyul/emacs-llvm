@@ -32,6 +32,6 @@ fi
   -L "$ROOT/lisp" \
   -L "$ROOT/lisp/adapters" \
   -L "$ROOT/lisp/test" \
-  "${extra_load_args[@]}" \
+  ${extra_load_args[@]+"${extra_load_args[@]}"} \
   "${load_args[@]}" \
   -f ert-run-tests-batch-and-exit
